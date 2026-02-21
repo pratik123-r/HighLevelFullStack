@@ -25,6 +25,7 @@ const AuditLogSchema = new Schema(
     userId: { type: String, index: true },
     seatId: { type: String, index: true },
     bookingId: { type: String, index: true },
+    adminId: { type: String, index: true },
     outcome: {
       type: String,
       enum: Object.values(AuditOutcome),

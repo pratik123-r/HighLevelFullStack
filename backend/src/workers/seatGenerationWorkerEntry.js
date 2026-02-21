@@ -2,6 +2,9 @@ import dotenv from 'dotenv';
 import { connectMongoDB, disconnectDatabases } from '../config/database.js';
 import { SeatRepository } from '../repositories/SeatRepository.js';
 import { ShowRepository } from '../repositories/ShowRepository.js';
+import { UserRepository } from '../repositories/UserRepository.js';
+import { AdminRepository } from '../repositories/AdminRepository.js';
+import { BookingRepository } from '../repositories/BookingRepository.js';
 import { AuditService } from '../services/AuditService.js';
 import { QueueService } from '../services/QueueService.js';
 import { SeatGenerationWorker } from './seatGenerationWorker.js';
@@ -16,8 +19,18 @@ async function startSeatGenerationWorker() {
 
     const seatRepository = new SeatRepository();
     const showRepository = new ShowRepository();
+    const userRepository = new UserRepository();
+    const adminRepository = new AdminRepository();
+    const bookingRepository = new BookingRepository();
     const queueService = new QueueService();
-    const auditService = new AuditService(queueService);
+    const auditService = new AuditService(
+      queueService,
+      userRepository,
+      adminRepository,
+      showRepository,
+      bookingRepository,
+      seatRepository
+    );
 
     const worker = new SeatGenerationWorker(
       seatRepository,

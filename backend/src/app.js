@@ -54,7 +54,14 @@ export function createApp() {
 
   const queueService = new QueueService();
   
-  const auditService = new AuditService(queueService);
+  const auditService = new AuditService(
+    queueService,
+    userRepository,
+    adminRepository,
+    showRepository,
+    bookingRepository,
+    seatRepository
+  );
   const userService = new UserService(userRepository);
   const adminService = new AdminService(adminRepository);
   const venueService = new VenueService(venueRepository);

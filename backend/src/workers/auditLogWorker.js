@@ -17,7 +17,7 @@ export class AuditLogWorker {
   }
 
   async processJob(job) {
-    const { operationType, eventId, showId, userId, seatId, bookingId, outcome, reason, metadata, timestamp } = job.data;
+    const { operationType, eventId, showId, userId, seatId, bookingId, adminId, outcome, reason, metadata, timestamp } = job.data;
 
     try {
       const query = {
@@ -29,6 +29,7 @@ export class AuditLogWorker {
       if (seatId) query.seatId = seatId;
       if (userId) query.userId = userId;
       if (showId) query.showId = showId;
+      if (adminId) query.adminId = adminId;
 
       let logTimestamp;
       if (timestamp) {
@@ -60,6 +61,7 @@ export class AuditLogWorker {
         userId,
         seatId,
         bookingId,
+        adminId,
         outcome,
         reason,
         metadata,

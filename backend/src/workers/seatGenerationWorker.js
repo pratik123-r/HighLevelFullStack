@@ -50,6 +50,7 @@ export class SeatGenerationWorker {
       await this.auditService.logSuccess({
         operationType: OperationType.SEAT_GENERATION,
         showId,
+        adminId: show.createdByAdminId,
         metadata: {
           totalSeats: show.totalSeats,
           jobId: job.id,
@@ -66,9 +67,21 @@ export class SeatGenerationWorker {
         console.error('Failed to update show status:', updateError);
       }
 
+      // Get adminId from show if available
+      let adminId = null;
+      try {
+        const showForAdmin = await this.showRepository.findById(showId);
+        if (showForAdmin) {
+          adminId = showForAdmin.createdByAdminId;
+        }
+      } catch (e) {
+        // Ignore error, adminId will remain null
+      }
+
       await this.auditService.logFailure({
         operationType: OperationType.SEAT_GENERATION,
         showId,
+        adminId,
         reason: error.message || 'Unknown error during seat generation',
         metadata: {
           jobId: job.id,

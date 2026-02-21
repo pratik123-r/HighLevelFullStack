@@ -49,7 +49,7 @@ export class ShowService {
       event: { connect: { id: eventId } },
       createdByAdmin: { connect: { id: adminId } },
       status: ShowStatus.SEAT_GENERATION_IN_PROGRESS,
-      totalSeats: totalSeats,
+      totalSeats: Number(totalSeats),
     });
 
     await this.queueService.enqueueSeatGeneration(show.id);
