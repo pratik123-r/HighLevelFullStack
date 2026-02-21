@@ -160,7 +160,9 @@ export class BookingService {
         showId,
         userId,
         bookingId: bookingId,
-        metadata: { seatIds: uniqueSeatIds, seatCount: results.seats.length },
+        metadata: { 
+          seatIds: uniqueSeatIds,
+        },
       });
 
       return {
@@ -203,7 +205,6 @@ export class BookingService {
     }
 
     try {
-      let seatCount = 0;
       const confirmedBooking = await prisma.$transaction(async (tx) => {
         const currentBooking =
           /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
@@ -248,8 +249,6 @@ export class BookingService {
           );
         }
 
-        seatCount = allSeats.length;
-
         await tx.$queryRaw(
           Prisma.sql`UPDATE "Booking"
           SET status = ${BookingStatus.CONFIRMED}::"BookingStatus", "updatedAt" = NOW()
@@ -289,7 +288,6 @@ export class BookingService {
         showId: confirmedBooking.showId,
         userId,
         bookingId,
-        metadata: { seatCount },
       });
 
       return confirmedBooking;
@@ -302,7 +300,7 @@ export class BookingService {
           showId = booking.showId;
         }
       } catch (e) {
-        
+        // Ignore error
       }
 
       await this.auditService.logFailure({
@@ -339,10 +337,6 @@ export class BookingService {
 
     try {
       const result = await prisma.$transaction(async (tx) => {
-        const seats = await tx.seat.findMany({
-          where: { bookingId: bookingId },
-        });
-
           await tx.seat.updateMany({
             where: { bookingId: bookingId },
             data: {
@@ -373,7 +367,6 @@ export class BookingService {
       await this.auditService.logSuccess({
         operationType: OperationType.CANCEL,
         showId: booking.showId,
-        seatId: booking.seatId,
         userId,
         bookingId,
         metadata: {
@@ -388,7 +381,6 @@ export class BookingService {
       await this.auditService.logFailure({
         operationType: OperationType.CANCEL,
         showId: booking.showId,
-        seatId: booking.seatId,
         userId,
         bookingId,
         reason: error.message || "Failed to cancel booking",

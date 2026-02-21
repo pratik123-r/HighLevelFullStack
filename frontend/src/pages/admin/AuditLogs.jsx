@@ -138,10 +138,16 @@ const AuditLogs = () => {
                         User ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Admin ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Show ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Booking ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Seat ID(s)
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Metadata
@@ -187,6 +193,11 @@ const AuditLogs = () => {
                           ) : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {log.adminId ? (
+                            <span className="font-mono text-xs">{log.adminId.substring(0, 8)}...</span>
+                          ) : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {log.showId ? (
                             <span className="font-mono text-xs">{log.showId.substring(0, 8)}...</span>
                           ) : 'N/A'}
@@ -196,12 +207,34 @@ const AuditLogs = () => {
                             <span className="font-mono text-xs">{log.bookingId.substring(0, 8)}...</span>
                           ) : 'N/A'}
                         </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {(() => {
+                            // Check for multiple seat IDs in metadata
+                            const seatIds = log.metadata?.seatIds || [];
+                            if (Array.isArray(seatIds) && seatIds.length > 0) {
+                              return (
+                                <span className="font-mono text-xs" title={seatIds.join(', ')}>
+                                  {seatIds.length} seat{seatIds.length !== 1 ? 's' : ''}
+                                </span>
+                              );
+                            }
+                            // Fallback to single seatId
+                            if (log.seatId) {
+                              return <span className="font-mono text-xs">{log.seatId.substring(0, 8)}...</span>;
+                            }
+                            return 'N/A';
+                          })()}
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                           {log.metadata ? (
                             <div className="truncate" title={JSON.stringify(log.metadata, null, 2)}>
-                              {Object.keys(log.metadata).length > 0 ? (
-                                <span className="text-xs">{Object.keys(log.metadata).join(', ')}</span>
-                              ) : 'N/A'}
+                              {(() => {
+                                const keys = Object.keys(log.metadata).filter(k => k !== 'denormalized' && k !== 'seatIds');
+                                if (keys.length > 0) {
+                                  return <span className="text-xs">{keys.join(', ')}</span>;
+                                }
+                                return 'N/A';
+                              })()}
                             </div>
                           ) : 'N/A'}
                         </td>
@@ -308,6 +341,13 @@ const AuditLogs = () => {
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Admin ID</label>
+                    <p className="mt-1 text-sm text-gray-900 font-mono break-all">
+                      {selectedLog.adminId || 'N/A'}
+                    </p>
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Show ID</label>
                     <p className="mt-1 text-sm text-gray-900 font-mono break-all">
                       {selectedLog.showId || 'N/A'}
@@ -322,10 +362,55 @@ const AuditLogs = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Seat ID</label>
-                    <p className="mt-1 text-sm text-gray-900 font-mono break-all">
-                      {selectedLog.seatId || 'N/A'}
-                    </p>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Seat ID(s)</label>
+                    {(() => {
+                      const seatIds = selectedLog.metadata?.seatIds || [];
+                      if (Array.isArray(seatIds) && seatIds.length > 0) {
+                        return (
+                          <div className="mt-1">
+                            <p className="text-sm text-gray-600 mb-2">
+                              {seatIds.length} seat{seatIds.length !== 1 ? 's' : ''} selected
+                            </p>
+                            <div className="bg-gray-50 p-3 rounded border border-gray-200 max-h-40 overflow-y-auto">
+                              {seatIds.map((seatId, index) => {
+                                // Match seat info by index since denormalized.seats array corresponds to seatIds array
+                                const seatInfo = selectedLog.metadata?.denormalized?.seats?.[index];
+                                return (
+                                  <div key={seatId} className="mb-2 last:mb-0">
+                                    <p className="text-xs font-mono text-gray-900">
+                                      {index + 1}. {seatId}
+                                      {seatInfo && ` (Seat #${seatInfo.seatNumber}, ${seatInfo.status})`}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {selectedLog.metadata?.denormalized?.seats && selectedLog.metadata.denormalized.seats.length > 0 && (
+                              <p className="text-xs text-gray-500 mt-2">
+                                Seat Numbers: {selectedLog.metadata.denormalized.seats.map(s => s.seatNumber).join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
+                      // Fallback to single seatId
+                      if (selectedLog.seatId) {
+                        const seatInfo = selectedLog.metadata?.denormalized?.seat;
+                        return (
+                          <div className="mt-1">
+                            <p className="text-sm text-gray-900 font-mono break-all">
+                              {selectedLog.seatId}
+                            </p>
+                            {seatInfo && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Seat Number: {seatInfo.seatNumber} | Status: {seatInfo.status}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
+                      return <p className="mt-1 text-sm text-gray-900">N/A</p>;
+                    })()}
                   </div>
 
                   <div>
@@ -351,11 +436,68 @@ const AuditLogs = () => {
                     </div>
                   )}
 
+                  {/* Denormalized Data Section */}
+                  {selectedLog.metadata?.denormalized && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-500 mb-2">Additional Information</label>
+                      <div className="bg-gray-50 p-4 rounded border border-gray-200 space-y-3">
+                        {selectedLog.metadata.denormalized.user && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">User:</p>
+                            <p className="text-xs text-gray-600">
+                              {selectedLog.metadata.denormalized.user.name} ({selectedLog.metadata.denormalized.user.email})
+                            </p>
+                          </div>
+                        )}
+                        {selectedLog.metadata.denormalized.admin && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Admin:</p>
+                            <p className="text-xs text-gray-600">
+                              {selectedLog.metadata.denormalized.admin.name} ({selectedLog.metadata.denormalized.admin.email})
+                            </p>
+                          </div>
+                        )}
+                        {selectedLog.metadata.denormalized.show && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Show:</p>
+                            <p className="text-xs text-gray-600">
+                              {selectedLog.metadata.denormalized.show.event?.name || 'N/A'}
+                              {selectedLog.metadata.denormalized.show.event?.venue && (
+                                <> - {selectedLog.metadata.denormalized.show.event.venue.name}</>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Status: {selectedLog.metadata.denormalized.show.status} | 
+                              Total Seats: {selectedLog.metadata.denormalized.show.totalSeats}
+                            </p>
+                          </div>
+                        )}
+                        {selectedLog.metadata.denormalized.booking && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Booking:</p>
+                            <p className="text-xs text-gray-600">
+                              Status: {selectedLog.metadata.denormalized.booking.status}
+                            </p>
+                          </div>
+                        )}
+                        {selectedLog.metadata.seatCount && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Seat Count:</p>
+                            <p className="text-xs text-gray-600">
+                              {selectedLog.metadata.seatCount} seat{selectedLog.metadata.seatCount !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Raw Metadata (for debugging) */}
                   {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Metadata</label>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Raw Metadata</label>
                       <div className="mt-1 bg-gray-50 p-4 rounded border border-gray-200">
-                        <pre className="text-xs text-gray-900 whitespace-pre-wrap font-mono overflow-x-auto">
+                        <pre className="text-xs text-gray-900 whitespace-pre-wrap font-mono overflow-x-auto max-h-60 overflow-y-auto">
                           {JSON.stringify(selectedLog.metadata, null, 2)}
                         </pre>
                       </div>

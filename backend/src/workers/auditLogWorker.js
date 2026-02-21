@@ -1,9 +1,12 @@
 import { Worker } from 'bullmq';
 import { redis } from '../config/redis.js';
 import { AuditLog } from '../models/AuditLog.js';
+import { SeatRepository } from '../repositories/SeatRepository.js';
+import { prisma } from '../config/database.js';
 
 export class AuditLogWorker {
   constructor() {
+    this.seatRepository = new SeatRepository();
     this.worker = new Worker(
       'audit-log',
       this.processJob.bind(this),
@@ -20,6 +23,26 @@ export class AuditLogWorker {
     const { operationType, eventId, showId, userId, seatId, bookingId, adminId, outcome, reason, metadata, timestamp } = job.data;
 
     try {
+      // Extract seat IDs from bookingId if available and not already in metadata
+      let enhancedMetadata = { ...metadata };
+
+      if (bookingId && (!metadata?.seatIds || !Array.isArray(metadata.seatIds) || metadata.seatIds.length === 0)) {
+        try {
+          const seats = await prisma.seat.findMany({
+            where: { bookingId: bookingId },
+            select: { id: true, seatNumber: true },
+            orderBy: { seatNumber: 'asc' },
+          });
+
+          if (seats.length > 0) {
+            const seatIds = seats.map(s => s.id);
+            enhancedMetadata.seatIds = seatIds;
+          }
+        } catch (error) {
+          console.error(`Failed to fetch seat IDs from bookingId ${bookingId}:`, error);
+        }
+      }
+
       const query = {
         operationType,
         outcome,
@@ -59,12 +82,12 @@ export class AuditLogWorker {
         eventId,
         showId,
         userId,
-        seatId,
+        seatId: seatId || null,
         bookingId,
         adminId,
         outcome,
         reason,
-        metadata,
+        metadata: enhancedMetadata,
         timestamp: logTimestamp instanceof Date ? logTimestamp : new Date(logTimestamp),
       });
     } catch (error) {

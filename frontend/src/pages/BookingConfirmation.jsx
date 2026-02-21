@@ -195,7 +195,7 @@ const BookingConfirmation = () => {
           {show && (
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-2">{show.event?.name}</h2>
-              <p className="text-gray-600">Venue: {show.venue?.name}</p>
+              <p className="text-gray-600">Venue: {show.event?.venue?.name || 'N/A'}</p>
             </div>
           )}
 

@@ -41,8 +41,8 @@ export class AuditService {
 
   /**
    * Fetch denormalized data for audit log
-   * @param {{ userId?: string, adminId?: string, showId?: string, bookingId?: string, seatId?: string }} ids
-   * @returns {Promise<{ user?: any, admin?: any, show?: any, booking?: any, seat?: any }>}
+   * @param {{ userId?: string, adminId?: string, showId?: string, bookingId?: string, seatId?: string, seatIds?: string[] }} ids
+   * @returns {Promise<{ user?: any, admin?: any, show?: any, booking?: any, seat?: any, seats?: any[] }>}
    */
   async fetchDenormalizedData(ids) {
     const denormalized = {};
@@ -52,10 +52,8 @@ export class AuditService {
         const user = await this.userRepository.findById(ids.userId);
         if (user) {
           denormalized.user = {
-            id: user.id,
             name: user.name,
             email: user.email,
-            createdAt: user.createdAt,
           };
         }
       }
@@ -68,10 +66,8 @@ export class AuditService {
         const admin = await this.adminRepository.findById(ids.adminId);
         if (admin) {
           denormalized.admin = {
-            id: admin.id,
             name: admin.name,
             email: admin.email,
-            createdAt: admin.createdAt,
           };
         }
       }
@@ -84,25 +80,14 @@ export class AuditService {
         const show = await this.showRepository.findById(ids.showId);
         if (show) {
           denormalized.show = {
-            id: show.id,
-            eventId: show.eventId,
             status: show.status,
             totalSeats: show.totalSeats,
-            createdAt: show.createdAt,
             event: show.event ? {
-              id: show.event.id,
               name: show.event.name,
-              venueId: show.event.venueId,
               venue: show.event.venue ? {
-                id: show.event.venue.id,
                 name: show.event.venue.name,
                 totalSeatCount: show.event.venue.totalSeatCount,
               } : null,
-            } : null,
-            createdByAdmin: show.createdByAdmin ? {
-              id: show.createdByAdmin.id,
-              name: show.createdByAdmin.name,
-              email: show.createdByAdmin.email,
             } : null,
           };
         }
@@ -116,22 +101,7 @@ export class AuditService {
         const booking = await this.bookingRepository.findById(ids.bookingId);
         if (booking) {
           denormalized.booking = {
-            id: booking.id,
-            userId: booking.userId,
-            showId: booking.showId,
-            seatId: booking.seatId,
             status: booking.status,
-            createdAt: booking.createdAt,
-            user: booking.user ? {
-              id: booking.user.id,
-              name: booking.user.name,
-              email: booking.user.email,
-            } : null,
-            show: booking.show ? {
-              id: booking.show.id,
-              eventId: booking.show.eventId,
-              status: booking.show.status,
-            } : null,
           };
         }
       }
@@ -140,23 +110,37 @@ export class AuditService {
     }
 
     try {
-      if (ids.seatId && this.seatRepository) {
-        const seat = await this.seatRepository.findById(ids.seatId);
-        if (seat) {
-          denormalized.seat = {
-            id: seat.id,
-            showId: seat.showId,
-            seatNumber: seat.seatNumber,
-            status: seat.status,
-            lockedByUserId: seat.lockedByUserId,
-            bookingId: seat.bookingId,
-            createdAt: seat.createdAt,
-            show: seat.show ? {
-              id: seat.show.id,
-              eventId: seat.show.eventId,
-              status: seat.show.status,
-            } : null,
-          };
+      const seatIdsToFetch = [];
+      if (ids.seatIds && Array.isArray(ids.seatIds) && ids.seatIds.length > 0) {
+        seatIdsToFetch.push(...ids.seatIds);
+      } else if (ids.seatId) {
+        seatIdsToFetch.push(ids.seatId);
+      }
+
+      if (seatIdsToFetch.length > 0 && this.seatRepository) {
+        const seatDetails = await Promise.all(
+          seatIdsToFetch.map(async (seatId) => {
+            try {
+              const seat = await this.seatRepository.findById(seatId);
+              if (seat) {
+                return {
+                  seatNumber: seat.seatNumber,
+                  status: seat.status,
+                };
+              }
+              return null;
+            } catch (err) {
+              console.error(`Failed to fetch seat ${seatId}:`, err);
+              return null;
+            }
+          })
+        );
+
+        const validSeats = seatDetails.filter(s => s !== null);
+        if (validSeats.length === 1) {
+          denormalized.seat = validSeats[0];
+        } else if (validSeats.length > 1) {
+          denormalized.seats = validSeats;
         }
       }
     } catch (error) {
@@ -174,33 +158,40 @@ export class AuditService {
     try {
       const timestamp = new Date();
       
-      // Fetch denormalized data
+      const seatIds = data.metadata?.seatIds && Array.isArray(data.metadata.seatIds) 
+        ? data.metadata.seatIds 
+        : (data.seatId ? [data.seatId] : []);
+
       const denormalized = await this.fetchDenormalizedData({
         userId: data.userId,
         adminId: data.adminId,
         showId: data.showId,
         bookingId: data.bookingId,
         seatId: data.seatId,
+        seatIds: (data.bookingId && !data.metadata?.seatIds) ? undefined : (seatIds.length > 0 ? seatIds : undefined),
       });
 
-      // Build enhanced metadata with all IDs and denormalized info
+      // Extract eventId from show if showId is provided and eventId is not already set
+      let eventId = data.eventId;
+      if (!eventId && data.showId && this.showRepository) {
+        try {
+          const show = await this.showRepository.findById(data.showId);
+          if (show) {
+            eventId = show.eventId;
+          }
+        } catch (error) {
+          console.error('Failed to fetch eventId from show for audit log:', error);
+        }
+      }
+
       const enhancedMetadata = {
         ...(data.metadata || {}),
-        // Include all IDs in metadata
-        ids: {
-          userId: data.userId || null,
-          adminId: data.adminId || null,
-          showId: data.showId || null,
-          bookingId: data.bookingId || null,
-          seatId: data.seatId || null,
-          eventId: data.eventId || null,
-        },
-        // Include denormalized data
         denormalized,
       };
 
       const logData = {
         ...data,
+        eventId: eventId || data.eventId || null,
         metadata: enhancedMetadata,
         timestamp,
       };
