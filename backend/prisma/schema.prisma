@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ShowStatus {
+  DRAFT
+  SEAT_GENERATION_IN_PROGRESS
+  AVAILABLE
+  CLOSED
+}
+
+enum SeatStatus {
+  AVAILABLE
+  BOOKED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String   // Hashed password with salt
+  salt      String   // Password salt
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  bookings Booking[]
+  lockedSeats Seat[]
+
+  @@index([email])
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String   // Hashed password with salt
+  salt      String   // Password salt
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  shows Show[]
+
+  @@index([email])
+}
+
+model Venue {
+  id            String   @id @default(uuid())
+  name          String
+  totalSeatCount Int
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+
+  events Event[]
+
+  @@index([name])
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  name      String
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  shows Show[]
+
+  @@index([venueId])
+  @@index([name])
+}
+
+model Show {
+  id            String      @id @default(uuid())
+  eventId       String
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdByAdminId String
+  createdByAdmin Admin      @relation(fields: [createdByAdminId], references: [id])
+  status        ShowStatus  @default(DRAFT)
+  totalSeats    Int
+  createdAt     DateTime    @default(now()) @db.Timestamptz // Stored in UTC
+  updatedAt     DateTime    @updatedAt @db.Timestamptz // Stored in UTC
+
+  seats    Seat[]
+  bookings Booking[]
+
+  @@index([eventId])
+  @@index([status])
+  @@index([createdByAdminId])
+}
+
+model Seat {
+  id            String      @id @default(uuid())
+  showId        String
+  show          Show        @relation(fields: [showId], references: [id], onDelete: Cascade)
+  seatNumber    Int
+  status        SeatStatus  @default(AVAILABLE)
+  lockedByUserId String?
+  lockedByUser  User?       @relation(fields: [lockedByUserId], references: [id])
+  lockedTill    DateTime?   @db.Timestamptz
+  bookingId     String?     // Booking ID created when seat is locked (multiple seats can share same bookingId)
+  booking       Booking?    @relation("SeatBookingId", fields: [bookingId], references: [id])
+  createdAt     DateTime    @default(now()) @db.Timestamptz // Stored in UTC
+
+  bookings Booking[]        @relation("SeatBookingRelation")
+
+  @@unique([showId, seatNumber])
+  @@index([showId, status])
+  @@index([lockedByUserId])
+  @@index([bookingId])
+  @@index([lockedTill])
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  showId    String
+  show      Show          @relation(fields: [showId], references: [id])
+  seatId    String
+  seat      Seat          @relation("SeatBookingRelation", fields: [seatId], references: [id])
+  status    BookingStatus @default(PENDING)
+  createdAt DateTime      @default(now()) @db.Timestamptz // Stored in UTC
+  updatedAt DateTime      @updatedAt @db.Timestamptz // Stored in UTC
+
+  seats Seat[]            @relation("SeatBookingId") // One booking can have multiple seats
+
+  @@index([userId])
+  @@index([showId])
+  @@index([seatId])
+  @@index([status])
+}
+
