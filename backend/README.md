@@ -121,16 +121,6 @@ npm run worker:audit
 npm run worker:seat
 ```
 
-### Prisma Studio (Database GUI)
-
-To view and manage your database using Prisma Studio:
-
-```bash
-npm run prisma:studio
-```
-
-This will open a web interface at `http://localhost:5555` where you can browse and edit your database records.
-
 ## Architecture & Design
 
 ### Concurrency Handling
