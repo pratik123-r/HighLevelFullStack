@@ -103,24 +103,6 @@ npm run worker:audit:watch
 npm run worker:seat:watch
 ```
 
-### Production Mode
-
-Start the main API server:
-
-```bash
-npm start
-```
-
-Start the background workers:
-
-```bash
-# Audit log worker
-npm run worker:audit
-
-# Seat generation worker
-npm run worker:seat
-```
-
 ## Architecture & Design
 
 ### Concurrency Handling
@@ -400,7 +382,7 @@ const customLimiter = createRateLimiter({
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
 | `PORT` | Server port | No | `3000` |
-| `NODE_ENV` | Environment (development/production) | No | `development` |
+| `NODE_ENV` | Environment | No | `development` |
 | `DATABASE_URL` | PostgreSQL connection string | Yes | - |
 | `MONGODB_URI` | MongoDB connection string | Yes | - |
 | `REDIS_HOST` | Redis host | No | `localhost` |
@@ -476,17 +458,6 @@ npm test
 ```bash
 npm run lint
 ```
-
-## Production Deployment
-
-1. Set `NODE_ENV=production`
-2. Use strong, unique passwords for all databases
-3. Enable SSL/TLS for database connections
-4. Configure connection pooling appropriately
-5. Set up process managers (PM2, systemd) for workers
-6. Configure reverse proxy (nginx) for the API server
-7. Set up monitoring and logging (e.g., Winston, Sentry)
-8. Store secrets in secure secret management (AWS Secrets Manager, HashiCorp Vault)
 
 ## License
 
