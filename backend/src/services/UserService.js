@@ -77,28 +77,6 @@ export class UserService {
   }
 
   /**
-   * @param {string} email
-   * @returns {Promise<Omit<import('@prisma/client').User, 'password' | 'salt'>>}
-   */
-  async getUserByEmail(email) {
-    const user = await this.userRepository.findByEmail(email);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const { password: _, salt: __, ...userWithoutPassword } = user;
-    return userWithoutPassword;
-  }
-
-  /**
-   * @returns {Promise<Array<Omit<import('@prisma/client').User, 'password' | 'salt'>>>}
-   */
-  async getAllUsers() {
-    const users = await this.userRepository.findAll();
-    return users.map(({ password: _, salt: __, ...user }) => user);
-  }
-
-  /**
    * @param {number} page
    * @param {number} limit
    * @returns {Promise<{ data: Array<Omit<import('@prisma/client').User, 'password' | 'salt'>>, total: number, page: number, limit: number }>}

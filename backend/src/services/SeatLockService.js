@@ -170,61 +170,6 @@ export class SeatLockService {
   }
 
   /**
-   * @param {string} userId
-   * @param {string} bookingId
-   * @param {string} seatId
-   * @returns {Promise<boolean>}
-   */
-  async isSeatLocked(userId, bookingId, seatId) {
-    if (!userId || !bookingId || !seatId) {
-      return false;
-    }
-
-    const lockKey = `${LOCK_KEY_PREFIX}${userId}:${bookingId}:${seatId}`;
-
-    try {
-      const value = await redis.get(lockKey);
-      return value !== null;
-    } catch (error) {
-      console.error('Redis seat check error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * @param {string} userId
-   * @param {string} bookingId
-   * @param {string} seatId
-   * @returns {Promise<{ locked: boolean, ttl?: number }>}
-   */
-  async getSeatLockInfo(userId, bookingId, seatId) {
-    if (!userId || !bookingId || !seatId) {
-      return { locked: false };
-    }
-
-    const lockKey = `${LOCK_KEY_PREFIX}${userId}:${bookingId}:${seatId}`;
-
-    try {
-      const [value, ttl] = await Promise.all([
-        redis.get(lockKey),
-        redis.ttl(lockKey),
-      ]);
-
-      if (!value) {
-        return { locked: false };
-      }
-
-      return {
-        locked: true,
-        ttl: ttl > 0 ? ttl : 0,
-      };
-    } catch (error) {
-      console.error('Redis get lock info error:', error);
-      return { locked: false };
-    }
-  }
-
-  /**
    * Check if any locks exist for a given bookingId and userId
    * @param {string} userId
    * @param {string} bookingId

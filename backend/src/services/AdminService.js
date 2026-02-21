@@ -77,28 +77,6 @@ export class AdminService {
   }
 
   /**
-   * @param {string} email
-   * @returns {Promise<Omit<import('@prisma/client').Admin, 'password' | 'salt'>>}
-   */
-  async getAdminByEmail(email) {
-    const admin = await this.adminRepository.findByEmail(email);
-    if (!admin) {
-      throw new Error('Admin not found');
-    }
-
-    const { password: _, salt: __, ...adminWithoutPassword } = admin;
-    return adminWithoutPassword;
-  }
-
-  /**
-   * @returns {Promise<Array<Omit<import('@prisma/client').Admin, 'password' | 'salt'>>>}
-   */
-  async getAllAdmins() {
-    const admins = await this.adminRepository.findAll();
-    return admins.map(({ password: _, salt: __, ...admin }) => admin);
-  }
-
-  /**
    * @param {number} page
    * @param {number} limit
    * @returns {Promise<{ data: Array<Omit<import('@prisma/client').Admin, 'password' | 'salt'>>, total: number, page: number, limit: number }>}

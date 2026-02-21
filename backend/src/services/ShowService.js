@@ -70,13 +70,6 @@ export class ShowService {
   }
 
   /**
-   * @returns {Promise<Array<import('@prisma/client').Show & { event: any }>>}
-   */
-  async getAvailableShows() {
-    return this.showRepository.findByStatus(ShowStatus.AVAILABLE);
-  }
-
-  /**
    * @param {number} page
    * @param {number} limit
    * @param {string} [status] - Optional status filter
@@ -86,6 +79,7 @@ export class ShowService {
     const skip = (page - 1) * limit;
     
     // If status is provided and valid, use it; otherwise default to AVAILABLE
+    /** @type {ShowStatus} */
     let showStatus = ShowStatus.AVAILABLE;
     if (status && Object.values(ShowStatus).includes(/** @type {any} */ (status))) {
       showStatus = /** @type {ShowStatus} */ (status);
@@ -132,21 +126,5 @@ export class ShowService {
     };
   }
 
-  /**
-   * @param {string} eventId
-   * @returns {Promise<Array<import('@prisma/client').Show & { event: any }>>}
-   */
-  async getShowsByEvent(eventId) {
-    return this.showRepository.findByEventId(eventId);
-  }
-
-  /**
-   * @param {string} id
-   * @param {import('@prisma/client').ShowStatus} status
-   * @returns {Promise<import('@prisma/client').Show>}
-   */
-  async updateShowStatus(id, status) {
-    return this.showRepository.updateStatus(id, status);
-  }
 }
 

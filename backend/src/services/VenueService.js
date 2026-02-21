@@ -43,13 +43,6 @@ export class VenueService {
   }
 
   /**
-   * @returns {Promise<Array<import('@prisma/client').Venue>>}
-   */
-  async getAllVenues() {
-    return this.venueRepository.findAll();
-  }
-
-  /**
    * @param {number} page
    * @param {number} limit
    * @returns {Promise<{ data: Array<import('@prisma/client').Venue>, total: number, page: number, limit: number }>}
