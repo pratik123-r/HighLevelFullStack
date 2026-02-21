@@ -1,0 +1,1122 @@
+{
+  "info": {
+    "_postman_id": "8cf1b373-9ffb-40c2-9799-56c53a3615fb",
+    "name": "Event Booking System API",
+    "description": "Complete API collection for Event Booking System with Admin and User endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "39938131",
+    "_collection_link": "https://go.postman.co/collection/39938131-8cf1b373-9ffb-40c2-9799-56c53a3615fb?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Register Admin",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/admin/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login Admin",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('admin_token', jsonData.token);",
+                      "    pm.environment.set('admin_id', jsonData.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/admin/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Admin by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/auth/{{admin_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "{{admin_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Admins",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/auth",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/users",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get User by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/users/{{user_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "{{user_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Venues",
+          "item": [
+            {
+              "name": "Create Venue",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('venue_id', jsonData.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Grand Theater\",\n  \"totalSeatCount\": 500\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/admin/venues",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "venues"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Venues",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/venues",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "venues"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Venue by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/venues/{{venue_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "venues",
+                    "{{venue_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Events",
+          "item": [
+            {
+              "name": "Create Event",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('event_id', jsonData.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Summer Concert\",\n  \"venueId\": \"{{venue_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/admin/events",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "events"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Events",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/events",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "events"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Event by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/events/{{event_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "events",
+                    "{{event_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Shows",
+          "item": [
+            {
+              "name": "Create Show",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('show_id', jsonData.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"{{event_id}}\",\n  \"adminId\": \"{{admin_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/admin/shows",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shows"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Show by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/shows/{{show_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shows",
+                    "{{show_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Show Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/shows/{{show_id}}/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shows",
+                    "{{show_id}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Audit Logs",
+          "item": [
+            {
+              "name": "Get Audit Logs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/audit-logs?page=1&limit=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "audit-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100",
+                      "description": "Items per page"
+                    },
+                    {
+                      "key": "showId",
+                      "value": "",
+                      "description": "Filter by show ID",
+                      "disabled": true
+                    },
+                    {
+                      "key": "userId",
+                      "value": "",
+                      "description": "Filter by user ID",
+                      "disabled": true
+                    },
+                    {
+                      "key": "operationType",
+                      "value": "",
+                      "description": "Filter by operation type (BOOK, CANCEL, LOCK, SEAT_GENERATION)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "outcome",
+                      "value": "",
+                      "description": "Filter by outcome (SUCCESS, FAILURE)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "startDate",
+                      "value": "",
+                      "description": "Filter by start date (ISO format)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "",
+                      "description": "Filter by end date (ISO format)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Audit Logs by Show ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/audit-logs?showId={{show_id}}&page=1&limit=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "audit-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "showId",
+                      "value": "{{show_id}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Audit Logs by User ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/audit-logs?userId={{user_id}}&page=1&limit=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "audit-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "userId",
+                      "value": "{{user_id}}"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Audit Logs by Operation Type",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/audit-logs?operationType=BOOK&page=1&limit=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "audit-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "operationType",
+                      "value": "BOOK",
+                      "description": "BOOK, CANCEL, LOCK, or SEAT_GENERATION"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Audit Logs by Outcome",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/audit-logs?outcome=SUCCESS&page=1&limit=100",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "audit-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "outcome",
+                      "value": "SUCCESS",
+                      "description": "SUCCESS or FAILURE"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Register User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"user123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/users/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('user_token', jsonData.token);",
+                      "    pm.environment.set('user_id', jsonData.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"user123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/users/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get My Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Shows",
+          "item": [
+            {
+              "name": "Get Available Shows",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/shows",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "shows"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Show by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/shows/{{show_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "shows",
+                    "{{show_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Show Seats",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    if (jsonData.data && jsonData.data.length > 0) {",
+                      "        pm.environment.set('seat_id', jsonData.data[0].id);",
+                      "        pm.environment.set('seat_id_2', jsonData.data.length > 1 ? jsonData.data[1].id : jsonData.data[0].id);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/shows/{{show_id}}/seats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "shows",
+                    "{{show_id}}",
+                    "seats"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Bookings",
+          "item": [
+            {
+              "name": "Lock Multiple Seats",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('pending_booking_id', jsonData.bookingId);",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"seatIds\": [\"015bf5e4-77da-4c50-8d91-d00f7c51da94\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/seats/lock",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "seats",
+                    "lock"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Confirm Booking",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bookings/{{pending_booking_id}}/confirm",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bookings",
+                    "{{pending_booking_id}}",
+                    "confirm"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Booking",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bookings/{{pending_booking_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bookings",
+                    "{{pending_booking_id}}",
+                    "cancel"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get User Bookings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bookings",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bookings"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Booking by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{user_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bookings/{{pending_booking_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bookings",
+                    "{{pending_booking_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "venue_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "event_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "show_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "seat_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "seat_id_2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pending_booking_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

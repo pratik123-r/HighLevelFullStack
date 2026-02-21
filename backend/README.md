@@ -12,6 +12,7 @@ A high-performance event booking system built with Node.js, Express, PostgreSQL,
   - [Cancel/Return Operations](#cancelreturn-operations)
   - [Audit Logging](#audit-logging)
 - [API Endpoints](#api-endpoints)
+- [Postman Collection](#postman-collection)
 - [Environment Variables](#environment-variables)
 - [Database Schema](#database-schema)
 
@@ -376,6 +377,79 @@ const customLimiter = createRateLimiter({
 - `GET /api/events` - List events
 - `GET /api/shows/:id` - Get show details
 - `GET /api/shows/:id/seats` - Get available seats for a show
+
+## Postman Collection
+
+A complete Postman collection is provided for testing all API endpoints. The collection includes pre-configured requests for all endpoints with proper authentication and environment variables.
+
+### Files
+
+- **`Event Booking System API.postman_collection.json`** - Complete API collection with all endpoints
+- **`Event Booking System -env.postman_environment.json`** - Postman environment with variables
+
+### Setup
+
+1. **Import the Collection**
+   - Open Postman
+   - Click "Import" button
+   - Select `Event Booking System API.postman_collection.json`
+   - The collection will be imported with all endpoints organized by category
+
+2. **Import the Environment**
+   - Click "Import" in Postman
+   - Select `Event Booking System -env.postman_environment.json`
+   - Select the imported environment from the environment dropdown (top right)
+
+3. **Configure Environment Variables**
+
+   The environment includes the following variables:
+
+   | Variable | Description | Default Value |
+   |----------|-------------|---------------|
+   | `base_url` | API base URL | `http://localhost:3000` |
+   | `admin_token` | JWT token for admin (auto-set on login) | - |
+   | `admin_id` | Admin user ID (auto-set on login) | - |
+   | `user_token` | JWT token for regular user (auto-set on login) | - |
+   | `user_id` | User ID (auto-set on login) | - |
+   | `venue_id` | Venue ID (set after creating venue) | - |
+   | `event_id` | Event ID (set after creating event) | - |
+   | `show_id` | Show ID (set after creating show) | - |
+   | `seat_id` | Seat ID (for testing) | - |
+   | `seat_id_2` | Second seat ID (for testing) | - |
+   | `pending_booking_id` | Booking ID (set after locking seats) | - |
+
+### Features
+
+- **Auto-authentication**: Login requests automatically set `admin_token` and `user_token` environment variables
+- **Organized Structure**: Endpoints grouped by Admin, User, and Public categories
+- **Pre-configured Requests**: All requests include proper headers and example request bodies
+- **Environment Variables**: Dynamic values using `{{variable_name}}` syntax for easy testing
+
+### Collection Structure
+
+#### Admin Endpoints
+- **Authentication**: Register, Login, Get Admin by ID, Get All Admins
+- **User Management**: Get All Users, Get User by ID
+- **Venues**: Create, Get All, Get by ID
+- **Events**: Create, Get All, Get by ID
+- **Shows**: Create, Get by ID, Get Status
+- **Audit Logs**: Get logs with various filters (by show, user, operation type, outcome)
+
+#### User Endpoints
+- **Authentication**: Register, Login, Get My Profile
+- **Shows**: Get Available Shows, Get Show by ID, Get Show Seats
+- **Bookings**: Lock Seats, Confirm Booking, Cancel Booking, Get User Bookings, Get Booking by ID
+
+#### Public Endpoints
+- **Health Check**: Server health status
+
+### Usage Tips
+
+1. **Start with Authentication**: Use Admin or User login endpoints first to get authentication tokens
+2. **Token Management**: Tokens are automatically saved to environment variables after successful login
+3. **Sequential Testing**: Create resources in order (Venue → Event → Show → Booking)
+4. **Update Variables**: Manually update IDs in environment after creating resources for dependent requests
+5. **Base URL**: Update `base_url` in environment if your API runs on a different port or host
 
 ## Environment Variables
 
