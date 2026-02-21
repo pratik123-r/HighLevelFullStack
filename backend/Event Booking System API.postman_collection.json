@@ -1,11 +1,11 @@
 {
   "info": {
-    "_postman_id": "8cf1b373-9ffb-40c2-9799-56c53a3615fb",
+    "_postman_id": "ba3d631b-d0c9-4ca5-ba6b-2fb1e3e0fee1",
     "name": "Event Booking System API",
     "description": "Complete API collection for Event Booking System with Public, Admin, and User endpoints",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "39938131",
-    "_collection_link": "https://go.postman.co/collection/39938131-8cf1b373-9ffb-40c2-9799-56c53a3615fb?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/39938131-ba3d631b-d0c9-4ca5-ba6b-2fb1e3e0fee1?source=collection_link"
   },
   "item": [
     {
@@ -403,7 +403,9 @@
                       "    pm.environment.set('venue_id', jsonData.id);",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -421,7 +423,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Grand Theater\",\n  \"totalSeatCount\": 500\n}"
+                  "raw": "{\n  \"name\": \"Grand Theater\",\n  \"totalSeatCount\": 1000\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/api/admin/venues",
@@ -505,7 +507,9 @@
                       "    pm.environment.set('show_id', jsonData.id);",
                       "}"
                     ],
-                    "type": "text/javascript"
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
                   }
                 }
               ],
@@ -523,7 +527,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"eventId\": \"{{event_id}}\",\n  \"adminId\": \"{{admin_id}}\"\n}"
+                  "raw": "{\n  \"eventId\": \"{{event_id}}\",\n  \"totalSeats\": 50\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/api/admin/shows",
@@ -975,7 +979,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"seatIds\": [\"015bf5e4-77da-4c50-8d91-d00f7c51da94\"]\n}"
+                  "raw": "{\n  \"seatIds\": [\"e1e23731-d8d7-411d-b9f0-f7411a040604\"]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/api/seats/lock",

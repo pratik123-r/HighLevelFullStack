@@ -25,11 +25,11 @@ export class ShowService {
   }
 
   /**
-   * @param {{ eventId: string, adminId: string }} data
+   * @param {{ eventId: string, adminId: string, totalSeats: number}} data
    * @returns {Promise<import('@prisma/client').Show>}
    */
   async createShow(data) {
-    const { eventId, adminId } = data;
+    const { eventId, adminId, totalSeats } = data;
 
     if (!adminId) {
       throw new Error('Admin ID is required to create a show');
@@ -49,7 +49,7 @@ export class ShowService {
       event: { connect: { id: eventId } },
       createdByAdmin: { connect: { id: adminId } },
       status: ShowStatus.SEAT_GENERATION_IN_PROGRESS,
-      totalSeats: event.venue.totalSeatCount,
+      totalSeats: totalSeats,
     });
 
     await this.queueService.enqueueSeatGeneration(show.id);
