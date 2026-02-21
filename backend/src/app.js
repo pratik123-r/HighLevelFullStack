@@ -31,6 +31,7 @@ import { AuditLogController } from './controllers/AuditLogController.js';
 
 import { createAdminRoutes } from './routes/adminRoutes.js';
 import { createUserRoutes } from './routes/userRoutes.js';
+import { createPublicRoutes } from './routes/publicRoutes.js';
 
 export function createApp() {
   const app = express();
@@ -82,7 +83,13 @@ export function createApp() {
   const bookingController = new BookingController(bookingService);
   const auditLogController = new AuditLogController(auditService);
 
+  // Public routes (no authentication required)
+  app.use('/api', createPublicRoutes(showController, venueController, eventController));
+
+  // Admin routes
   app.use('/api/admin', createAdminRoutes(adminController, venueController, eventController, showController, userController, auditLogController, bookingController));
+  
+  // User routes (authentication required for some endpoints)
   app.use('/api', createUserRoutes(userController, showController, bookingController));
 
   app.get('/health', (req, res) => {

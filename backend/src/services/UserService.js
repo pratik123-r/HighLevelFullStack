@@ -50,12 +50,12 @@ export class UserService {
 
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      return null; // User not found
+      return null; 
     }
 
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
-      return null; // Invalid password
+      return null;
     }
 
     const { password: _, salt: __, ...userWithoutPassword } = user;

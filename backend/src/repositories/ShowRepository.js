@@ -68,7 +68,7 @@ export class ShowRepository {
   /**
    * @param {number} skip
    * @param {number} take
-   * @param {import('@prisma/client').ShowStatus} [status] - Optional status filter
+   * @param {import('@prisma/client').ShowStatus} [status]
    * @returns {Promise<{ data: Array<import('@prisma/client').Show & { event: any }>, total: number }>}
    */
   async findAllPaginated(skip = 0, take = 10, status = null) {

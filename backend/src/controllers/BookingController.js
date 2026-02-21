@@ -63,7 +63,6 @@ export class BookingController {
 
       const booking = await this.bookingService.cancelBooking(bookingId, userId);
       
-      // If booking was deleted (PENDING), return success message
       if (booking === null) {
         res.status(200).json({ 
           message: 'Pending booking has been released. The booking was never confirmed, so it has been removed.',
@@ -72,7 +71,6 @@ export class BookingController {
         return;
       }
 
-      // If booking was cancelled (CONFIRMED), return the cancelled booking
       res.status(200).json(booking);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -83,7 +81,7 @@ export class BookingController {
     try {
       const userId = /** @type {any} */ (req).user.id;
       const { page, limit } = parsePagination(req.query);
-      const { status } = req.query; // Optional status filter: PENDING, CONFIRMED, CANCELLED
+      const { status } = req.query;
       
       const result = await this.bookingService.getUserBookingsPaginated(userId, page, limit, status);
       res.status(200).json(formatPaginationResponse(result.data, result.total, page, limit));
@@ -111,7 +109,7 @@ export class BookingController {
   getAllBookings = async (req, res) => {
     try {
       const { page, limit } = parsePagination(req.query);
-      const { status, userId, showId } = req.query; // Optional filters
+      const { status, userId, showId } = req.query;
       
       const result = await this.bookingService.getAllBookingsPaginated(
         page, 

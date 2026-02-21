@@ -48,13 +48,11 @@ export function extractTokenFromHeader(authHeader) {
  * @returns {string | null}
  */
 export function extractToken(req) {
-  // First try to get from cookie
   const tokenFromCookie = req.cookies?.token;
   if (tokenFromCookie) {
     return tokenFromCookie;
   }
 
-  // Fallback to Authorization header
   const authHeader = req.headers.authorization;
   return extractTokenFromHeader(authHeader);
 }

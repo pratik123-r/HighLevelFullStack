@@ -1,6 +1,6 @@
 import { redis } from '../config/redis.js';
 
-const LOCK_DURATION_SECONDS = 5 * 60; // 5 minutes in seconds
+const LOCK_DURATION_SECONDS = 5 * 60;
 const LOCK_KEY_PREFIX = 'seat_lock:';
 
 export class SeatLockService {

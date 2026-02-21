@@ -50,12 +50,12 @@ export class AdminService {
 
     const admin = await this.adminRepository.findByEmail(email);
     if (!admin) {
-      return null; // Admin not found
+      return null; 
     }
 
     const isValid = await verifyPassword(password, admin.password);
     if (!isValid) {
-      return null; // Invalid password
+      return null;
     }
 
     const { password: _, salt: __, ...adminWithoutPassword } = admin;

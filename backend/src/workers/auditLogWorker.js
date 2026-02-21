@@ -30,7 +30,6 @@ export class AuditLogWorker {
       if (userId) query.userId = userId;
       if (showId) query.showId = showId;
 
-      // Convert timestamp to Date if it's a string or number (from serialization)
       let logTimestamp;
       if (timestamp) {
         logTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
@@ -38,7 +37,6 @@ export class AuditLogWorker {
         logTimestamp = new Date();
       }
 
-      // Ensure logTimestamp is a valid Date
       if (isNaN(logTimestamp.getTime())) {
         logTimestamp = new Date();
       }

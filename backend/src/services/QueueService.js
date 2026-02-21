@@ -44,8 +44,8 @@ export class QueueService {
     await this.auditLogQueue.add('write-audit-log', data, {
       jobId,
       removeOnComplete: {
-        age: 3600, // Keep completed jobs for 1 hour
-        count: 1000, // Keep max 1000 completed jobs
+        age: 3600, 
+        count: 1000,
       },
     });
   }

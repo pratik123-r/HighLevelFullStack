@@ -1,8 +1,8 @@
-import { prisma } from '../config/database.js';
-import { SeatStatus, BookingStatus, ShowStatus, Prisma } from '@prisma/client';
-import { OperationType } from '../models/AuditLog.js';
-import { SeatLockService } from './SeatLockService.js';
-import { randomUUID } from 'crypto';
+import { prisma } from "../config/database.js";
+import { SeatStatus, BookingStatus, ShowStatus, Prisma } from "@prisma/client";
+import { OperationType } from "../models/AuditLog.js";
+import { SeatLockService } from "./SeatLockService.js";
+import { randomUUID } from "crypto";
 
 const LOCK_DURATION_MS = 1 * 60 * 1000;
 
@@ -14,7 +14,13 @@ export class BookingService {
    * @param {import('../repositories/UserRepository.js').UserRepository} userRepository
    * @param {import('../services/AuditService.js').AuditService} auditService
    */
-  constructor(bookingRepository, seatRepository, showRepository, userRepository, auditService) {
+  constructor(
+    bookingRepository,
+    seatRepository,
+    showRepository,
+    userRepository,
+    auditService,
+  ) {
     this.bookingRepository = bookingRepository;
     this.seatRepository = seatRepository;
     this.showRepository = showRepository;
@@ -39,11 +45,11 @@ export class BookingService {
     } else if (seatId) {
       seatIdsArray = [seatId];
     } else {
-      throw new Error('Either seatId or seatIds array is required');
+      throw new Error("Either seatId or seatIds array is required");
     }
 
     if (seatIdsArray.length === 0) {
-      throw new Error('At least one seat ID is required');
+      throw new Error("At least one seat ID is required");
     }
 
     if (seatIdsArray.length > MAX_SEATS) {
@@ -52,50 +58,56 @@ export class BookingService {
 
     const uniqueSeatIds = [...new Set(seatIdsArray)];
     if (uniqueSeatIds.length !== seatIdsArray.length) {
-      throw new Error('Duplicate seat IDs are not allowed');
+      throw new Error("Duplicate seat IDs are not allowed");
     }
 
-    // Verify user exists
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
-    // Verify all seats exist
     const seats = await this.seatRepository.findByIds(uniqueSeatIds);
 
     if (seats.length !== uniqueSeatIds.length) {
-      throw new Error('One or more seats not found');
+      throw new Error("One or more seats not found");
     }
 
-    const uniqueShowIds = [...new Set(seats.map(seat => seat.showId))];
+    const uniqueShowIds = [...new Set(seats.map((seat) => seat.showId))];
     if (uniqueShowIds.length > 1) {
-      throw new Error('All seats must be from the same show');
+      throw new Error("All seats must be from the same show");
     }
 
     const showId = uniqueShowIds[0];
     const firstSeat = seats[0];
 
     if (firstSeat.show.status !== ShowStatus.AVAILABLE) {
-      throw new Error(`Show is not available. Current status: ${firstSeat.show.status}`);
+      throw new Error(
+        `Show is not available. Current status: ${firstSeat.show.status}`,
+      );
     }
 
     const bookingId = randomUUID();
 
-    const redisLocked = await this.seatLockService.lockSeats(uniqueSeatIds, userId, bookingId, LOCK_DURATION_MS / 1000);
+    const redisLocked = await this.seatLockService.lockSeats(
+      uniqueSeatIds,
+      userId,
+      bookingId,
+      LOCK_DURATION_MS / 1000,
+    );
     if (!redisLocked) {
-      throw new Error('Redis Seats are currently being locked by another request. Please try again.');
+      throw new Error(
+        "Seats are currently being locked by another request. Please try again.",
+      );
     }
 
     try {
       const results = await prisma.$transaction(async (tx) => {
-
         const inClause = Prisma.join(
-          uniqueSeatIds.map(id => Prisma.sql`${id}`),
-          ', '
+          uniqueSeatIds.map((id) => Prisma.sql`${id}`),
+          ", ",
         );
         await tx.$queryRaw(
-          Prisma.sql`SELECT id FROM "Seat" WHERE id IN (${inClause}) FOR UPDATE`
+          Prisma.sql`SELECT id FROM "Seat" WHERE id IN (${inClause}) FOR UPDATE`,
         );
 
         const seatsToCheck = /** @type {Array<{id: string}>} */ (
@@ -109,23 +121,25 @@ export class BookingService {
         );
 
         if (seatsToCheck.length > 0) {
-          throw new Error('Seats are not available');
+          throw new Error("Seats are not available");
         }
 
         const firstSeatId = uniqueSeatIds[0];
         const lockExpiry = new Date(Date.now() + LOCK_DURATION_MS);
 
-        const bookingResult = /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
-          await tx.$queryRaw`
+        const bookingResult =
+          /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
+            await tx.$queryRaw`
             INSERT INTO "Booking" (id, "userId", "showId", "seatId", status, "createdAt", "updatedAt")
             VALUES (${bookingId}::uuid, ${userId}::uuid, ${showId}::uuid, ${firstSeatId}::uuid, ${BookingStatus.PENDING}::"BookingStatus", NOW(), NOW())
             RETURNING id, "userId", "showId", "seatId", status, "createdAt", "updatedAt"
           `
-        );
+          );
         const booking = bookingResult[0];
 
-        const lockedSeats = /** @type {Array<{id: string, showId: string, seatNumber: number, status: string, lockedByUserId: string | null, lockedTill: Date | null, bookingId: string | null, createdAt: Date}>} */ (
-          await tx.$queryRaw`
+        const lockedSeats =
+          /** @type {Array<{id: string, showId: string, seatNumber: number, status: string, lockedByUserId: string | null, lockedTill: Date | null, bookingId: string | null, createdAt: Date}>} */ (
+            await tx.$queryRaw`
             UPDATE "Seat"
             SET 
               "lockedByUserId" = ${userId}::uuid,
@@ -134,7 +148,7 @@ export class BookingService {
             WHERE id IN (${inClause})
             RETURNING id, "showId", "seatNumber", status, "lockedByUserId", "lockedTill", "bookingId", "createdAt"
           `
-        );
+          );
 
         return { seats: lockedSeats, bookings: [booking] };
       });
@@ -149,30 +163,22 @@ export class BookingService {
         metadata: { seatIds: uniqueSeatIds, seatCount: results.seats.length },
       });
 
-      if (uniqueSeatIds.length === 1) {
-        return {
-          seat: results.seats[0],
-          booking: booking,
-          bookingId: bookingId,
-        };
-      } else {
-        return {
-          seats: results.seats,
-          booking: booking,
-          bookingId: bookingId,
-          count: results.seats.length,
-        };
-      }
+      return {
+        seats: results.seats,
+        booking: booking,
+        bookingId: bookingId,
+        count: results.seats.length,
+      };
     } catch (error) {
-      await this.seatLockService.unlockByBookingId(bookingId).catch(err => {
-        console.error('Failed to unlock Redis seats:', err);
+      await this.seatLockService.unlockByBookingId(bookingId).catch((err) => {
+        console.error("Failed to unlock Redis seats:", err);
       });
 
       await this.auditService.logFailure({
         operationType: OperationType.LOCK,
         showId,
         userId,
-        reason: error.message || 'Failed to lock seats',
+        reason: error.message || "Failed to lock seats",
         metadata: { seatIds: uniqueSeatIds },
       });
       throw error;
@@ -186,50 +192,60 @@ export class BookingService {
   async confirmBooking(data) {
     const { bookingId, userId } = data;
 
-    const hasLocks = await this.seatLockService.hasLocksForBooking(userId, bookingId);
+    const hasLocks = await this.seatLockService.hasLocksForBooking(
+      userId,
+      bookingId,
+    );
     if (!hasLocks) {
-      throw new Error('No active locks found for this booking. The lock may have expired.');
+      throw new Error(
+        "No active locks found for this booking. The lock may have expired.",
+      );
     }
 
     try {
       let seatCount = 0;
       const confirmedBooking = await prisma.$transaction(async (tx) => {
-        const currentBooking = /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
-          await tx.$queryRaw(
-            Prisma.sql`SELECT id, "userId", "showId", "seatId", status, "createdAt", "updatedAt"
+        const currentBooking =
+          /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
+            await tx.$queryRaw(
+              Prisma.sql`SELECT id, "userId", "showId", "seatId", status, "createdAt", "updatedAt"
             FROM "Booking"
             WHERE id::text = ${bookingId}
-            FOR UPDATE`
-          )
-        );
+            FOR UPDATE`,
+            )
+          );
 
         if (!currentBooking || currentBooking.length === 0) {
-          throw new Error('Booking not found');
+          throw new Error("Booking not found");
         }
 
         const booking = currentBooking[0];
         if (booking.userId !== userId) {
-          throw new Error('You do not have permission to confirm this booking');
+          throw new Error("You do not have permission to confirm this booking");
         }
         if (booking.status !== BookingStatus.PENDING) {
-          throw new Error(`Booking is not pending. Current status: ${booking.status}`);
+          throw new Error(
+            `Booking is not pending. Current status: ${booking.status}`,
+          );
         }
 
-        // Use SQL NOW() for timezone-consistent comparison instead of JavaScript Date
-        const allSeats = /** @type {Array<{id: string, showId: string, seatNumber: number, status: string, lockedByUserId: string | null, lockedTill: Date | null, bookingId: string | null, createdAt: Date}>} */ (
-          await tx.$queryRaw(
-            Prisma.sql`SELECT id, "showId", "seatNumber", status, "lockedByUserId", "lockedTill", "bookingId", "createdAt"
+        const allSeats =
+          /** @type {Array<{id: string, showId: string, seatNumber: number, status: string, lockedByUserId: string | null, lockedTill: Date | null, bookingId: string | null, createdAt: Date}>} */ (
+            await tx.$queryRaw(
+              Prisma.sql`SELECT id, "showId", "seatNumber", status, "lockedByUserId", "lockedTill", "bookingId", "createdAt"
             FROM "Seat"
             WHERE "bookingId"::text = ${bookingId}
               AND "lockedByUserId"::text = ${userId}
               AND "lockedTill" > NOW()
               AND status = ${SeatStatus.AVAILABLE}::"SeatStatus"
-            FOR UPDATE`
-          )
-        );
+            FOR UPDATE`,
+            )
+          );
 
         if (!allSeats || allSeats.length === 0) {
-          throw new Error('Seat lock has expired or seat is not available. Please lock the seats again before confirming.');
+          throw new Error(
+            "Seat lock has expired or seat is not available. Please lock the seats again before confirming.",
+          );
         }
 
         seatCount = allSeats.length;
@@ -237,7 +253,7 @@ export class BookingService {
         await tx.$queryRaw(
           Prisma.sql`UPDATE "Booking"
           SET status = ${BookingStatus.CONFIRMED}::"BookingStatus", "updatedAt" = NOW()
-          WHERE id::text = ${bookingId}`
+          WHERE id::text = ${bookingId}`,
         );
 
         await tx.$queryRaw(
@@ -246,7 +262,7 @@ export class BookingService {
             status = ${SeatStatus.BOOKED}::"SeatStatus",
             "lockedByUserId" = NULL,
             "lockedTill" = NULL
-          WHERE "bookingId"::text = ${bookingId}`
+          WHERE "bookingId"::text = ${bookingId}`,
         );
 
         const updatedBooking = await tx.booking.findUnique({
@@ -261,9 +277,11 @@ export class BookingService {
         return updatedBooking;
       });
 
-      // Unlock all seats in Redis for this booking after successful confirmation
-      await this.seatLockService.unlockByBookingId(bookingId).catch(err => {
-        console.error('Failed to unlock seats in Redis after confirmation:', err);
+      await this.seatLockService.unlockByBookingId(bookingId).catch((err) => {
+        console.error(
+          "Failed to unlock seats in Redis after confirmation:",
+          err,
+        );
       });
 
       await this.auditService.logSuccess({
@@ -276,7 +294,7 @@ export class BookingService {
 
       return confirmedBooking;
     } catch (error) {
-      // Try to get showId for audit log, but don't fail if we can't
+
       let showId = null;
       try {
         const booking = await this.bookingRepository.findById(bookingId);
@@ -284,7 +302,7 @@ export class BookingService {
           showId = booking.showId;
         }
       } catch (e) {
-        // Ignore error, just log without showId
+        
       }
 
       await this.auditService.logFailure({
@@ -292,7 +310,7 @@ export class BookingService {
         showId,
         userId,
         bookingId,
-        reason: error.message || 'Failed to confirm booking',
+        reason: error.message || "Failed to confirm booking",
       });
       throw error;
     }
@@ -306,28 +324,25 @@ export class BookingService {
   async cancelBooking(bookingId, userId) {
     const booking = await this.bookingRepository.findById(bookingId);
     if (!booking) {
-      throw new Error('Booking not found');
+      throw new Error("Booking not found");
     }
 
     if (booking.userId !== userId) {
-      throw new Error('You do not have permission to cancel this booking');
+      throw new Error("You do not have permission to cancel this booking");
     }
 
     if (booking.status === BookingStatus.CANCELLED) {
-      throw new Error('Booking is already cancelled');
+      throw new Error("Booking is already cancelled");
     }
 
     const isPending = booking.status === BookingStatus.PENDING;
 
     try {
       const result = await prisma.$transaction(async (tx) => {
-        // Get all seats for this booking
         const seats = await tx.seat.findMany({
-          where: { bookingId: bookingId }
+          where: { bookingId: bookingId },
         });
 
-        // Unlock all seats associated with this booking
-        if (seats.length > 0) {
           await tx.seat.updateMany({
             where: { bookingId: bookingId },
             data: {
@@ -337,24 +352,10 @@ export class BookingService {
               bookingId: null,
             },
           });
-        } else {
-          // Fallback: update the single seat if seats array is empty (backward compatibility)
-          await tx.seat.update({
-            where: { id: booking.seatId },
-            data: {
-              status: SeatStatus.AVAILABLE,
-              lockedByUserId: null,
-              lockedTill: null,
-              bookingId: null,
-            },
-          });
-        }
 
-        // If PENDING: delete the booking (never confirmed, not a real cancellation)
-        // If CONFIRMED: mark as CANCELLED (actual cancellation)
         if (isPending) {
           await tx.booking.delete({
-            where: { id: bookingId }
+            where: { id: bookingId },
           });
           return null;
         } else {
@@ -365,20 +366,20 @@ export class BookingService {
         }
       });
 
-      // Unlock all seats in Redis for this booking
-      await this.seatLockService.unlockByBookingId(bookingId).catch(err => {
-        console.error('Failed to unlock Redis seats:', err);
+      await this.seatLockService.unlockByBookingId(bookingId).catch((err) => {
+        console.error("Failed to unlock Redis seats:", err);
       });
 
-      // Log success
       await this.auditService.logSuccess({
         operationType: OperationType.CANCEL,
         showId: booking.showId,
         seatId: booking.seatId,
         userId,
         bookingId,
-        metadata: { 
-          action: isPending ? 'deleted_pending_booking' : 'cancelled_confirmed_booking' 
+        metadata: {
+          action: isPending
+            ? "deleted_pending_booking"
+            : "cancelled_confirmed_booking",
         },
       });
 
@@ -390,7 +391,7 @@ export class BookingService {
         seatId: booking.seatId,
         userId,
         bookingId,
-        reason: error.message || 'Failed to cancel booking',
+        reason: error.message || "Failed to cancel booking",
       });
       throw error;
     }
@@ -406,57 +407,56 @@ export class BookingService {
    * @param {boolean} [includeUser=false] - Whether to include user information (for admin)
    * @returns {Promise<{ data: Array<import('@prisma/client').Booking & { show: any, seats: any[], user?: any }>, total: number, page: number, limit: number }>}
    */
-  async getBookingsPaginated(page = 1, limit = 10, userId = null, status = null, showId = null, includeUser = false) {
-    // Build where clause
-    /** @type {any} */
+  async getBookingsPaginated(
+    page = 1,
+    limit = 10,
+    userId = null,
+    status = null,
+    showId = null,
+    includeUser = false,
+  ) {
     const whereClause = {};
 
-    // Add userId filter if provided (for user bookings)
     if (userId) {
       whereClause.userId = userId;
     }
 
-    // Add status filter if provided
     if (status && Object.values(BookingStatus).includes(status)) {
       whereClause.status = status;
     }
 
-    // Add showId filter if provided (admin only)
     if (showId) {
       whereClause.showId = showId;
     }
 
-    // Get total count
     const total = await prisma.booking.count({ where: whereClause });
 
-    // Get paginated bookings
     const skip = (page - 1) * limit;
     const bookings = await prisma.booking.findMany({
       where: whereClause,
       skip,
       take: limit,
       include: {
-        ...(includeUser ? { user: true } : {}), // Include user only when requested (for admin)
-        show: { include: { event: { include: { venue: true } } } }
+        ...(includeUser ? { user: true } : {}),
+        show: { include: { event: { include: { venue: true } } } },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
-    // Get all seats for each booking
     const bookingsWithSeats = await Promise.all(
       bookings.map(async (booking) => {
         const seats = await prisma.seat.findMany({
           where: {
-            bookingId: booking.id
+            bookingId: booking.id,
           },
-          orderBy: { seatNumber: 'asc' }
+          orderBy: { seatNumber: "asc" },
         });
 
         return {
           ...booking,
           seats: seats,
         };
-      })
+      }),
     );
 
     return {
@@ -487,8 +487,14 @@ export class BookingService {
    * @param {string | null} [showId=null] - Optional show ID filter
    * @returns {Promise<{ data: Array<import('@prisma/client').Booking & { show: any, seats: any[], user?: any }>, total: number, page: number, limit: number }>}
    */
-  async getAllBookingsPaginated(page = 1, limit = 10, status = null, userId = null, showId = null) {
-    return this.getBookingsPaginated(page, limit, userId, status, showId, true); // includeUser = true for admin
+  async getAllBookingsPaginated(
+    page = 1,
+    limit = 10,
+    status = null,
+    userId = null,
+    showId = null,
+  ) {
+    return this.getBookingsPaginated(page, limit, userId, status, showId, true);
   }
 
   /**
@@ -498,9 +504,8 @@ export class BookingService {
   async getBookingById(bookingId) {
     const booking = await this.bookingRepository.findById(bookingId);
     if (!booking) {
-      throw new Error('Booking not found');
+      throw new Error("Booking not found");
     }
     return booking;
   }
 }
-

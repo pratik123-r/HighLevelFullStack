@@ -634,30 +634,29 @@ All API calls are centralized in `src/services/api.js`:
 - `POST /api/bookings/:id/confirm` - Confirm booking
 - `POST /api/bookings/:id/cancel` - Cancel booking
 
-#### Admin Endpoints
+#### Public Endpoints (No Authentication Required)
+- `GET /api/shows` - Get available shows
+- `GET /api/shows/:id` - Get show details
+- `GET /api/shows/:id/seats` - Get show seats
+- `GET /api/venues` - Get all venues
+- `GET /api/venues/:id` - Get venue by ID
+- `GET /api/events` - Get all events
+- `GET /api/events/:id` - Get event by ID
+
+#### Admin Endpoints (Admin Authentication Required)
 - `POST /api/admin/auth/register` - Admin registration
 - `POST /api/admin/auth/login` - Admin login
 - `POST /api/admin/auth/logout` - Admin logout
 - `GET /api/admin/users` - Get all users
 - `GET /api/admin/users/:id` - Get user by ID
-- `POST /api/admin/venues` - Create venue
-- `GET /api/admin/venues` - Get all venues
-- `GET /api/admin/venues/:id` - Get venue by ID
-- `POST /api/admin/events` - Create event
-- `GET /api/admin/events` - Get all events
-- `GET /api/admin/events/:id` - Get event by ID
+- `POST /api/admin/venues` - Create venue (GET endpoints are public)
+- `POST /api/admin/events` - Create event (GET endpoints are public)
 - `POST /api/admin/shows` - Create show
-- `GET /api/admin/shows` - Get all shows
-- `GET /api/admin/shows/:id` - Get show by ID
+- `GET /api/admin/shows` - Get all shows (admin view with status filter)
 - `GET /api/admin/shows/:id/status` - Get show status
 - `GET /api/admin/bookings` - Get all bookings
 - `GET /api/admin/bookings/:id` - Get booking by ID
 - `GET /api/admin/audit-logs` - Get audit logs
-
-#### Public Endpoints
-- `GET /api/shows` - Get available shows
-- `GET /api/shows/:id` - Get show details
-- `GET /api/shows/:id/seats` - Get show seats
 
 ### Error Handling
 

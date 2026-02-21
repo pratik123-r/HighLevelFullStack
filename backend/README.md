@@ -374,9 +374,15 @@ const customLimiter = createRateLimiter({
 
 ### Public Endpoints
 
-- `GET /api/events` - List events
+These endpoints are accessible without authentication:
+
+- `GET /api/shows` - List available shows
 - `GET /api/shows/:id` - Get show details
 - `GET /api/shows/:id/seats` - Get available seats for a show
+- `GET /api/venues` - List all venues
+- `GET /api/venues/:id` - Get venue details
+- `GET /api/events` - List all events
+- `GET /api/events/:id` - Get event details
 
 ## Postman Collection
 
@@ -427,21 +433,24 @@ A complete Postman collection is provided for testing all API endpoints. The col
 
 ### Collection Structure
 
-#### Admin Endpoints
-- **Authentication**: Register, Login, Get Admin by ID, Get All Admins
-- **User Management**: Get All Users, Get User by ID
-- **Venues**: Create, Get All, Get by ID
-- **Events**: Create, Get All, Get by ID
-- **Shows**: Create, Get by ID, Get Status
-- **Audit Logs**: Get logs with various filters (by show, user, operation type, outcome)
-
-#### User Endpoints
-- **Authentication**: Register, Login, Get My Profile
+#### Public Endpoints (No Authentication Required)
 - **Shows**: Get Available Shows, Get Show by ID, Get Show Seats
+- **Venues**: Get All Venues, Get Venue by ID
+- **Events**: Get All Events, Get Event by ID
+- **Health Check**: Server health status
+
+#### User Endpoints (Authentication Required)
+- **Authentication**: Register, Login, Get My Profile
 - **Bookings**: Lock Seats, Confirm Booking, Cancel Booking, Get User Bookings, Get Booking by ID
 
-#### Public Endpoints
-- **Health Check**: Server health status
+#### Admin Endpoints (Admin Authentication Required)
+- **Authentication**: Register, Login, Get Admin by ID, Get All Admins
+- **User Management**: Get All Users, Get User by ID
+- **Venues**: Create Venue (GET endpoints are public)
+- **Events**: Create Event (GET endpoints are public)
+- **Shows**: Create Show, Get All Shows (admin view), Get Show Status
+- **Bookings**: Get All Bookings, Get Booking by ID
+- **Audit Logs**: Get logs with various filters (by show, user, operation type, outcome)
 
 ### Usage Tips
 

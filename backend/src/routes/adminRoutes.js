@@ -34,16 +34,11 @@ export function createAdminRoutes(adminController, venueController, eventControl
   router.get('/users/:id', authenticateAdmin, userController.getUserById);
 
   router.post('/venues', authenticateAdmin, venueController.createVenue);
-  router.get('/venues', venueController.getAllVenues); 
-  router.get('/venues/:id', venueController.getVenueById); 
 
   router.post('/events', authenticateAdmin, eventController.createEvent);
-  router.get('/events', eventController.getAllEvents); 
-  router.get('/events/:id', eventController.getEventById); 
 
   router.post('/shows', authenticateAdmin, showController.createShow);
   router.get('/shows', authenticateAdmin, showController.getAllShows);
-  router.get('/shows/:id', showController.getShowById); 
   router.get('/shows/:id/status', showController.getShowStatus); 
 
   router.get('/bookings', authenticateAdmin, bookingController.getAllBookings);

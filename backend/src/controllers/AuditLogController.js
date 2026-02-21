@@ -29,10 +29,8 @@ export class AuditLogController {
       const pageNum = parseInt(page, 10) || 1;
       const limitNum = parseInt(limit, 10) || 20;
       
-      // Get total count first (without limit)
       const total = await this.auditService.getLogsCount(filters);
       
-      // Get paginated logs
       const queryFilters = { ...filters, limit: limitNum + (pageNum - 1) * limitNum };
       const skip = (pageNum - 1) * limitNum;
       

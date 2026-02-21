@@ -15,7 +15,6 @@ export class VenueService {
    * @returns {Promise<import('@prisma/client').Venue>}
    */
   async createVenue(data) {
-    // Convert totalSeatCount to integer if it's a string
     const totalSeatCount = typeof data.totalSeatCount === 'string' 
       ? parseInt(data.totalSeatCount, 10) 
       : data.totalSeatCount;

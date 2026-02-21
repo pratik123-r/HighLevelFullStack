@@ -49,7 +49,7 @@ export class ShowService {
       event: { connect: { id: eventId } },
       createdByAdmin: { connect: { id: adminId } },
       status: ShowStatus.SEAT_GENERATION_IN_PROGRESS,
-      totalSeats: event.venue.totalSeatCount, // Copy from venue
+      totalSeats: event.venue.totalSeatCount,
     });
 
     await this.queueService.enqueueSeatGeneration(show.id);
@@ -78,7 +78,6 @@ export class ShowService {
   async getAvailableShowsPaginated(page = 1, limit = 10, status = null) {
     const skip = (page - 1) * limit;
     
-    // If status is provided and valid, use it; otherwise default to AVAILABLE
     /** @type {ShowStatus} */
     let showStatus = ShowStatus.AVAILABLE;
     if (status && Object.values(ShowStatus).includes(/** @type {any} */ (status))) {
@@ -107,7 +106,6 @@ export class ShowService {
   async getAllShowsPaginated(page = 1, limit = 10, status = null) {
     const skip = (page - 1) * limit;
     
-    // Convert status string to ShowStatus enum if provided
     let showStatus = null;
     if (status && Object.values(ShowStatus).includes(/** @type {any} */ (status))) {
       showStatus = /** @type {ShowStatus} */ (status);
