@@ -530,11 +530,102 @@ backend/
 └── package.json
 ```
 
+## Testing
+
+This document describes the comprehensive unit test suite for the Event Booking System backend.
+
+### Overview
+
+The test suite provides comprehensive coverage for all modules including:
+- Service modules (9 services)
+- Controller modules (3 controllers)
+- Repository modules (2 repositories)
+- Route modules (1 route file)
+- Worker modules (2 workers)
+- Utility modules (3 utilities)
+- Middleware modules (3 middleware)
+
+### Test Structure
+
+All tests are organized in a centralized `tests/` directory that mirrors the `src/` structure:
+
+```
+backend/
+├── src/                    # Source code
+│   ├── controllers/
+│   ├── services/
+│   ├── repositories/
+│   ├── routes/
+│   ├── workers/
+│   ├── utils/
+│   └── middleware/
+│
+├── tests/                  # All tests (centralized)
+│   ├── controllers/
+│   │   ├── BookingController.test.js
+│   │   ├── UserController.test.js
+│   │   └── AdminController.test.js
+│   ├── services/
+│   │   ├── SeatLockService.test.js
+│   │   ├── SeatService.test.js
+│   │   ├── UserService.test.js
+│   │   ├── AdminService.test.js
+│   │   ├── AuditService.test.js
+│   │   ├── EventService.test.js
+│   │   ├── VenueService.test.js
+│   │   ├── ShowService.test.js
+│   │   └── QueueService.test.js
+│   ├── repositories/
+│   │   ├── BookingRepository.test.js
+│   │   └── UserRepository.test.js
+│   ├── routes/
+│   │   └── userRoutes.test.js
+│   ├── workers/
+│   │   ├── auditLogWorker.test.js
+│   │   └── seatGenerationWorker.test.js
+│   ├── utils/
+│   │   ├── password.test.js
+│   │   ├── jwt.test.js
+│   │   └── pagination.test.js
+│   └── middleware/
+│       ├── auth.test.js
+│       ├── errorHandler.test.js
+│       └── rateLimiter.test.js
+│
+├── jest.config.js
+└── package.json
+```
+
+**Benefits of this structure:**
+- ✅ Clean separation between source and test code
+- ✅ Easy to find all tests in one place
+- ✅ Mirrors source structure for easy navigation
+- ✅ No `__tests__` folders cluttering source directories
+
 ### Running Tests
 
+#### Run all tests
 ```bash
 npm test
 ```
+
+#### Run tests in watch mode
+```bash
+npm run test:watch
+```
+
+#### Run tests with coverage report
+```bash
+npm run test:coverage
+```
+
+### Test Features
+
+- **Comprehensive Coverage** - Tests cover all critical paths, edge cases, and error scenarios
+- **Isolated Tests** - Each test is independent and doesn't affect others
+- **Mocked Dependencies** - Prisma, Redis, MongoDB, BullMQ all mocked for fast execution
+- **Fast Execution** - Tests run quickly without requiring actual database connections
+- **Clear Organization** - Tests grouped by functionality with descriptive names
 
 ### Linting
 
