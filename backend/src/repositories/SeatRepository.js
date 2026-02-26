@@ -88,6 +88,18 @@ export class SeatRepository {
   }
 
   /**
+   * @param {string} bookingId
+   * @returns {Promise<Array<{ id: string, seatNumber: number }>>}
+   */
+  async findByBookingId(bookingId) {
+    return prisma.seat.findMany({
+      where: { bookingId },
+      select: { id: true, seatNumber: true },
+      orderBy: { seatNumber: 'asc' },
+    });
+  }
+
+  /**
    * @param {string} showId
    * @param {number} seatNumber
    * @returns {Promise<import('@prisma/client').Seat | null>}

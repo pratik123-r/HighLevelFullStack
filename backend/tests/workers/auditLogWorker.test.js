@@ -52,6 +52,7 @@ describe('AuditLogWorker', () => {
   let auditLogWorker;
   let mockWorkerInstance;
   let mockSeatRepository;
+  let mockAuditService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -65,11 +66,17 @@ describe('AuditLogWorker', () => {
 
     mockSeatRepository = {
       findById: jest.fn(),
+      findByBookingId: jest.fn().mockResolvedValue([]),
     };
 
-    auditLogWorker = new AuditLogWorker();
-    // The worker instance is stored in auditLogWorker.worker
-    // We need to ensure it's the mock instance
+    mockAuditService = {
+      fetchDenormalizedData: jest.fn().mockResolvedValue({}),
+      showRepository: {
+        findById: jest.fn(),
+      },
+    };
+
+    auditLogWorker = new AuditLogWorker(mockAuditService, mockSeatRepository);
     auditLogWorker.worker = mockWorkerInstance;
   });
 
@@ -111,6 +118,7 @@ describe('AuditLogWorker', () => {
 
       await auditLogWorker.processJob(mockJob);
 
+      expect(mockAuditService.fetchDenormalizedData).toHaveBeenCalled();
       expect(mockAuditLog.findOne).toHaveBeenCalled();
       expect(mockAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -135,7 +143,7 @@ describe('AuditLogWorker', () => {
         { id: 'seat-2', seatNumber: 2 },
       ];
 
-      mockPrisma.seat.findMany.mockResolvedValue(seats);
+      mockSeatRepository.findByBookingId.mockResolvedValue(seats);
       mockAuditLog.findOne.mockResolvedValue(null);
       mockAuditLog.create.mockResolvedValue({});
 
@@ -146,11 +154,7 @@ describe('AuditLogWorker', () => {
 
       await auditLogWorker.processJob({ ...mockJob, data: jobData });
 
-      expect(mockPrisma.seat.findMany).toHaveBeenCalledWith({
-        where: { bookingId: 'booking-123' },
-        select: { id: true, seatNumber: true },
-        orderBy: { seatNumber: 'asc' },
-      });
+      expect(mockSeatRepository.findByBookingId).toHaveBeenCalledWith('booking-123');
       expect(mockAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           metadata: expect.objectContaining({
@@ -171,7 +175,7 @@ describe('AuditLogWorker', () => {
 
       await auditLogWorker.processJob({ ...mockJob, data: jobData });
 
-      expect(mockPrisma.seat.findMany).not.toHaveBeenCalled();
+      expect(mockSeatRepository.findByBookingId).not.toHaveBeenCalled();
     });
 
     it('should handle timestamp conversion', async () => {
@@ -218,7 +222,7 @@ describe('AuditLogWorker', () => {
     });
 
     it('should handle errors when fetching seat IDs', async () => {
-      mockPrisma.seat.findMany.mockRejectedValue(new Error('Database error'));
+      mockSeatRepository.findByBookingId.mockRejectedValue(new Error('Database error'));
       mockAuditLog.findOne.mockResolvedValue(null);
       mockAuditLog.create.mockResolvedValue({});
 

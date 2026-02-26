@@ -290,14 +290,7 @@ describe('AuditService', () => {
       );
     });
 
-    it('should extract eventId from show when not provided', async () => {
-      const show = {
-        id: 'show-123',
-        eventId: 'event-123',
-      };
-
-      mockShowRepository.findById.mockResolvedValue(show);
-
+    it('should enqueue without eventId (eventId is resolved in worker)', async () => {
       const logData = {
         operationType: OperationType.BOOK,
         showId: 'show-123',
@@ -308,7 +301,9 @@ describe('AuditService', () => {
 
       expect(mockQueueService.enqueueAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
-          eventId: 'event-123',
+          operationType: OperationType.BOOK,
+          showId: 'show-123',
+          outcome: AuditOutcome.SUCCESS,
         }),
         expect.any(String)
       );

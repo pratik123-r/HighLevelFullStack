@@ -40,13 +40,13 @@ export class AuditService {
   }
 
   /**
-   * Fetch denormalized data for audit log
+   * Fetch denormalized data for audit log. Used by tests and by the audit worker.
    * @param {{ userId?: string, adminId?: string, showId?: string, bookingId?: string, seatId?: string, seatIds?: string[] }} ids
    * @returns {Promise<{ user?: any, admin?: any, show?: any, booking?: any, seat?: any, seats?: any[] }>}
    */
   async fetchDenormalizedData(ids) {
     const denormalized = {};
-    
+
     try {
       if (ids.userId && this.userRepository) {
         const user = await this.userRepository.findById(ids.userId);
@@ -151,52 +151,21 @@ export class AuditService {
   }
 
   /**
+   * Enqueues an audit log. Denormalization and DB lookups run in the worker so
+   * the main server thread is not blocked.
    * @param {{ operationType: string, eventId?: string, showId?: string, userId?: string, seatId?: string, bookingId?: string, adminId?: string, outcome: string, reason?: string, metadata?: any }} data
    * @returns {Promise<void>}
    */
   async log(data) {
     try {
       const timestamp = new Date();
-      
-      const seatIds = data.metadata?.seatIds && Array.isArray(data.metadata.seatIds) 
-        ? data.metadata.seatIds 
-        : (data.seatId ? [data.seatId] : []);
-
-      const denormalized = await this.fetchDenormalizedData({
-        userId: data.userId,
-        adminId: data.adminId,
-        showId: data.showId,
-        bookingId: data.bookingId,
-        seatId: data.seatId,
-        seatIds: (data.bookingId && !data.metadata?.seatIds) ? undefined : (seatIds.length > 0 ? seatIds : undefined),
-      });
-
-      // Extract eventId from show if showId is provided and eventId is not already set
-      let eventId = data.eventId;
-      if (!eventId && data.showId && this.showRepository) {
-        try {
-          const show = await this.showRepository.findById(data.showId);
-          if (show) {
-            eventId = show.eventId;
-          }
-        } catch (error) {
-          console.error('Failed to fetch eventId from show for audit log:', error);
-        }
-      }
-
-      const enhancedMetadata = {
-        ...(data.metadata || {}),
-        denormalized,
-      };
-
       const logData = {
         ...data,
-        eventId: eventId || data.eventId || null,
-        metadata: enhancedMetadata,
+        eventId: data.eventId ?? null,
+        metadata: data.metadata ?? {},
         timestamp,
       };
       const idempotencyKey = this.generateIdempotencyKey(logData);
-      
       await this.queueService.enqueueAuditLog(logData, idempotencyKey);
     } catch (error) {
       console.error('Failed to enqueue audit log:', error);

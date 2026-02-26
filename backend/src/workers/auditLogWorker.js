@@ -1,12 +1,12 @@
 import { Worker } from 'bullmq';
 import { redis } from '../config/redis.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { SeatRepository } from '../repositories/SeatRepository.js';
-import { prisma } from '../config/database.js';
 
 export class AuditLogWorker {
-  constructor() {
-    this.seatRepository = new SeatRepository();
+  constructor(auditService, seatRepository) {
+    this.auditService = auditService;
+    this.seatRepository = seatRepository;
+
     this.worker = new Worker(
       'audit-log',
       this.processJob.bind(this),
@@ -28,18 +28,35 @@ export class AuditLogWorker {
 
       if (bookingId && (!metadata?.seatIds || !Array.isArray(metadata.seatIds) || metadata.seatIds.length === 0)) {
         try {
-          const seats = await prisma.seat.findMany({
-            where: { bookingId: bookingId },
-            select: { id: true, seatNumber: true },
-            orderBy: { seatNumber: 'asc' },
-          });
-
+          const seats = await this.seatRepository.findByBookingId(bookingId);
           if (seats.length > 0) {
-            const seatIds = seats.map(s => s.id);
-            enhancedMetadata.seatIds = seatIds;
+            enhancedMetadata.seatIds = seats.map(s => s.id);
           }
         } catch (error) {
           console.error(`Failed to fetch seat IDs from bookingId ${bookingId}:`, error);
+        }
+      }
+
+      const seatIds = enhancedMetadata.seatIds && Array.isArray(enhancedMetadata.seatIds)
+        ? enhancedMetadata.seatIds
+        : (seatId ? [seatId] : []);
+      const denormalized = await this.auditService.fetchDenormalizedData({
+        userId,
+        adminId,
+        showId,
+        bookingId,
+        seatId,
+        seatIds: seatIds.length > 0 ? seatIds : undefined,
+      });
+      enhancedMetadata = { ...enhancedMetadata, denormalized };
+
+      let resolvedEventId = eventId;
+      if (!resolvedEventId && showId && this.auditService.showRepository) {
+        try {
+          const show = await this.auditService.showRepository.findById(showId);
+          if (show) resolvedEventId = show.eventId;
+        } catch (error) {
+          console.error('Failed to fetch eventId from show for audit log:', error);
         }
       }
 
@@ -79,7 +96,7 @@ export class AuditLogWorker {
 
       await AuditLog.create({
         operationType,
-        eventId,
+        eventId: resolvedEventId ?? null,
         showId,
         userId,
         seatId: seatId || null,
@@ -97,7 +114,8 @@ export class AuditLogWorker {
   }
 
   setupEventHandlers() {
-    this.worker.on('completed', () => {
+    this.worker.on('completed', (job) => {
+      console.log(`Audit log job ${job.id} completed`);
     });
 
     this.worker.on('failed', (job, err) => {

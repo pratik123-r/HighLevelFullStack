@@ -1,5 +1,12 @@
 import dotenv from 'dotenv';
 import { connectMongoDB, disconnectDatabases } from '../config/database.js';
+import { SeatRepository } from '../repositories/SeatRepository.js';
+import { UserRepository } from '../repositories/UserRepository.js';
+import { AdminRepository } from '../repositories/AdminRepository.js';
+import { ShowRepository } from '../repositories/ShowRepository.js';
+import { BookingRepository } from '../repositories/BookingRepository.js';
+import { AuditService } from '../services/AuditService.js';
+import { QueueService } from '../services/QueueService.js';
 import { AuditLogWorker } from './auditLogWorker.js';
 
 dotenv.config();
@@ -10,7 +17,22 @@ async function startAuditLogWorker() {
 
     await connectMongoDB();
 
-    const worker = new AuditLogWorker();
+    const seatRepository = new SeatRepository();
+    const userRepository = new UserRepository();
+    const adminRepository = new AdminRepository();
+    const showRepository = new ShowRepository();
+    const bookingRepository = new BookingRepository();
+    const queueService = new QueueService();
+    const auditService = new AuditService(
+      queueService,
+      userRepository,
+      adminRepository,
+      showRepository,
+      bookingRepository,
+      seatRepository
+    );
+
+    const worker = new AuditLogWorker(auditService, seatRepository);
 
     console.log('Audit Log Worker started successfully');
     console.log('Listening for audit log jobs...');
