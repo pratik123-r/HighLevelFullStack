@@ -124,14 +124,9 @@ export class SeatLockService {
         unlocked_count = unlocked_count + 1
       end
       
-      -- Remove from seat index
+      -- Remove seat index
       local seat_index_key = seat_index_prefix .. seat_id
-      redis.call('SREM', seat_index_key, lock_key)
-      
-      -- If seat index is empty, delete it
-      if redis.call('SCARD', seat_index_key) == 0 then
-        redis.call('DEL', seat_index_key)
-      end
+      redis.call('DEL', seat_index_key)
     end
     
     -- Clean up booking index
