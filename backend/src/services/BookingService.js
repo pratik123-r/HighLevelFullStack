@@ -431,28 +431,13 @@ export class BookingService {
       include: {
         ...(includeUser ? { user: true } : {}),
         show: { include: { event: { include: { venue: true } } } },
+        seats: { orderBy: { seatNumber: "asc" } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    const bookingsWithSeats = await Promise.all(
-      bookings.map(async (booking) => {
-        const seats = await prisma.seat.findMany({
-          where: {
-            bookingId: booking.id,
-          },
-          orderBy: { seatNumber: "asc" },
-        });
-
-        return {
-          ...booking,
-          seats: seats,
-        };
-      }),
-    );
-
     return {
-      data: bookingsWithSeats,
+      data: bookings,
       total,
       page,
       limit,
