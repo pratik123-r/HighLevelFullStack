@@ -68,8 +68,8 @@ const BookingConfirmation = () => {
       const response = await bookingAPI.lockSeats({ seatIds: selectedSeats });
       setBooking(response.data);
       // Calculate time left based on lockedTill if available
-      if (response.data.seat?.lockedTill || response.data.seats?.[0]?.lockedTill) {
-        const lockedTill = new Date(response.data.seat?.lockedTill || response.data.seats[0].lockedTill);
+      if (response.data.seats?.[0]?.lockedTill) {
+        const lockedTill = new Date(response.data.seats[0].lockedTill);
         const now = new Date();
         const diff = Math.max(0, Math.floor((lockedTill - now) / 1000));
         setTimeLeft(diff);

@@ -44,7 +44,6 @@ describe('BookingRepository', () => {
       const data = {
         userId: 'user-123',
         showId: 'show-123',
-        seatId: 'seat-123',
         status: 'PENDING',
       };
 
@@ -53,7 +52,7 @@ describe('BookingRepository', () => {
         ...data,
         user: { id: 'user-123' },
         show: { id: 'show-123', event: { venue: {} } },
-        seat: { id: 'seat-123' },
+        seats: [{ id: 'seat-123', seatNumber: 1 }],
       };
 
       mockPrisma.booking.create.mockResolvedValue(createdBooking);
@@ -65,7 +64,7 @@ describe('BookingRepository', () => {
         include: {
           user: true,
           show: { include: { event: { include: { venue: true } } } },
-          seat: true,
+          seats: { orderBy: { seatNumber: 'asc' } },
         },
       });
       expect(result).toEqual(createdBooking);
@@ -80,7 +79,7 @@ describe('BookingRepository', () => {
         userId: 'user-123',
         user: { id: 'user-123' },
         show: { id: 'show-123' },
-        seat: { id: 'seat-123' },
+        seats: [{ id: 'seat-123', seatNumber: 1 }],
       };
 
       mockPrisma.booking.findUnique.mockResolvedValue(booking);
@@ -92,7 +91,7 @@ describe('BookingRepository', () => {
         include: {
           user: true,
           show: { include: { event: { include: { venue: true } } } },
-          seat: true,
+          seats: { orderBy: { seatNumber: 'asc' } },
         },
       });
       expect(result).toEqual(booking);
@@ -123,7 +122,7 @@ describe('BookingRepository', () => {
         where: { userId },
         include: {
           show: { include: { event: { include: { venue: true } } } },
-          seat: true,
+          seats: { orderBy: { seatNumber: 'asc' } },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -150,7 +149,7 @@ describe('BookingRepository', () => {
         take,
         include: {
           show: { include: { event: { include: { venue: true } } } },
-          seat: true,
+          seats: { orderBy: { seatNumber: 'asc' } },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -184,7 +183,7 @@ describe('BookingRepository', () => {
 
       expect(mockPrisma.booking.findMany).toHaveBeenCalledWith({
         where: { showId },
-        include: { user: true, seat: true },
+        include: { user: true, seats: { orderBy: { seatNumber: 'asc' } } },
       });
       expect(result).toEqual(bookings);
     });
@@ -199,7 +198,7 @@ describe('BookingRepository', () => {
         status,
         user: { id: 'user-123' },
         show: { id: 'show-123' },
-        seat: { id: 'seat-123' },
+        seats: [{ id: 'seat-123', seatNumber: 1 }],
       };
 
       mockPrisma.booking.update.mockResolvedValue(updatedBooking);
@@ -212,7 +211,7 @@ describe('BookingRepository', () => {
         include: {
           user: true,
           show: { include: { event: { include: { venue: true } } } },
-          seat: true,
+          seats: { orderBy: { seatNumber: 'asc' } },
         },
       });
       expect(result).toEqual(updatedBooking);

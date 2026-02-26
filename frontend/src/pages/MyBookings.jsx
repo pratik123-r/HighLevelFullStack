@@ -122,7 +122,7 @@ const MyBookings = () => {
                               .join(', ')}
                           </>
                         ) : (
-                          <>Seat: {booking.seat?.seatNumber || 'N/A'}</>
+                          <>Seat: N/A</>
                         )}
                       </p>
                       <p className="text-gray-500 text-sm">

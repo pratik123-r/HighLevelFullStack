@@ -63,7 +63,8 @@ describe('BookingService - Essential Tests Only', () => {
       mockSeatRepository,
       mockShowRepository,
       mockUserRepository,
-      mockAuditService
+      mockAuditService,
+      mockSeatLockService
     );
   });
 

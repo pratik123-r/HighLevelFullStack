@@ -109,10 +109,8 @@ model Seat {
   lockedByUser  User?       @relation(fields: [lockedByUserId], references: [id])
   lockedTill    DateTime?   @db.Timestamptz
   bookingId     String?     // Booking ID created when seat is locked (multiple seats can share same bookingId)
-  booking       Booking?    @relation("SeatBookingId", fields: [bookingId], references: [id])
+  booking       Booking?    @relation(fields: [bookingId], references: [id])
   createdAt     DateTime    @default(now()) @db.Timestamptz // Stored in UTC
-
-  bookings Booking[]        @relation("SeatBookingRelation")
 
   @@unique([showId, seatNumber])
   @@index([showId, status])
@@ -127,17 +125,14 @@ model Booking {
   user      User          @relation(fields: [userId], references: [id])
   showId    String
   show      Show          @relation(fields: [showId], references: [id])
-  seatId    String
-  seat      Seat          @relation("SeatBookingRelation", fields: [seatId], references: [id])
   status    BookingStatus @default(PENDING)
   createdAt DateTime      @default(now()) @db.Timestamptz // Stored in UTC
   updatedAt DateTime      @updatedAt @db.Timestamptz // Stored in UTC
 
-  seats Seat[]            @relation("SeatBookingId") // One booking can have multiple seats
+  seats Seat[]            // One booking can have multiple seats (via Seat.bookingId)
 
   @@index([userId])
   @@index([showId])
-  @@index([seatId])
   @@index([status])
 }
 

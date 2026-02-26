@@ -1,7 +1,6 @@
 import { prisma } from "../config/database.js";
 import { SeatStatus, BookingStatus, ShowStatus, Prisma } from "@prisma/client";
 import { OperationType } from "../models/AuditLog.js";
-import { SeatLockService } from "./SeatLockService.js";
 import { randomUUID } from "crypto";
 
 const LOCK_DURATION_MS = 1 * 60 * 1000;
@@ -13,6 +12,7 @@ export class BookingService {
    * @param {import('../repositories/ShowRepository.js').ShowRepository} showRepository
    * @param {import('../repositories/UserRepository.js').UserRepository} userRepository
    * @param {import('../services/AuditService.js').AuditService} auditService
+   * @param {import('./SeatLockService.js').SeatLockService} seatLockService
    */
   constructor(
     bookingRepository,
@@ -20,13 +20,14 @@ export class BookingService {
     showRepository,
     userRepository,
     auditService,
+    seatLockService,
   ) {
     this.bookingRepository = bookingRepository;
     this.seatRepository = seatRepository;
     this.showRepository = showRepository;
     this.userRepository = userRepository;
     this.auditService = auditService;
-    this.seatLockService = new SeatLockService();
+    this.seatLockService = seatLockService;
   }
 
   /**
@@ -124,15 +125,14 @@ export class BookingService {
           throw new Error("Seats are not available");
         }
 
-        const firstSeatId = uniqueSeatIds[0];
         const lockExpiry = new Date(Date.now() + LOCK_DURATION_MS);
 
         const bookingResult =
-          /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
+          /** @type {Array<{id: string, userId: string, showId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
             await tx.$queryRaw`
-            INSERT INTO "Booking" (id, "userId", "showId", "seatId", status, "createdAt", "updatedAt")
-            VALUES (${bookingId}::uuid, ${userId}::uuid, ${showId}::uuid, ${firstSeatId}::uuid, ${BookingStatus.PENDING}::"BookingStatus", NOW(), NOW())
-            RETURNING id, "userId", "showId", "seatId", status, "createdAt", "updatedAt"
+            INSERT INTO "Booking" (id, "userId", "showId", status, "createdAt", "updatedAt")
+            VALUES (${bookingId}::uuid, ${userId}::uuid, ${showId}::uuid, ${BookingStatus.PENDING}::"BookingStatus", NOW(), NOW())
+            RETURNING id, "userId", "showId", status, "createdAt", "updatedAt"
           `
           );
         const booking = bookingResult[0];
@@ -189,7 +189,7 @@ export class BookingService {
 
   /**
    * @param {{ bookingId: string, userId: string }} data
-   * @returns {Promise<import('@prisma/client').Booking & { user: any, show: any, seat: any }>}
+   * @returns {Promise<import('@prisma/client').Booking & { user: any, show: any, seats: any[] }>}
    */
   async confirmBooking(data) {
     const { bookingId, userId } = data;
@@ -207,9 +207,9 @@ export class BookingService {
     try {
       const confirmedBooking = await prisma.$transaction(async (tx) => {
         const currentBooking =
-          /** @type {Array<{id: string, userId: string, showId: string, seatId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
+          /** @type {Array<{id: string, userId: string, showId: string, status: string, createdAt: Date, updatedAt: Date}>} */ (
             await tx.$queryRaw(
-              Prisma.sql`SELECT id, "userId", "showId", "seatId", status, "createdAt", "updatedAt"
+              Prisma.sql`SELECT id, "userId", "showId", status, "createdAt", "updatedAt"
             FROM "Booking"
             WHERE id::text = ${bookingId}
             FOR UPDATE`,
@@ -269,7 +269,7 @@ export class BookingService {
           include: {
             user: true,
             show: { include: { event: { include: { venue: true } } } },
-            seat: true,
+            seats: { orderBy: { seatNumber: "asc" } },
           },
         });
 
@@ -491,7 +491,7 @@ export class BookingService {
 
   /**
    * @param {string} bookingId
-   * @returns {Promise<import('@prisma/client').Booking & { user: any, show: any, seat: any }>}
+   * @returns {Promise<import('@prisma/client').Booking & { user: any, show: any, seats: any[] }>}
    */
   async getBookingById(bookingId) {
     const booking = await this.bookingRepository.findById(bookingId);
