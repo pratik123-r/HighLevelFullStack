@@ -6,14 +6,15 @@ import { randomUUID } from "crypto";
 const LOCK_DURATION_MS = 1 * 60 * 1000;
 
 export class BookingService {
-  /**
-   * @param {import('../repositories/BookingRepository.js').BookingRepository} bookingRepository
-   * @param {import('../repositories/SeatRepository.js').SeatRepository} seatRepository
-   * @param {import('../repositories/ShowRepository.js').ShowRepository} showRepository
-   * @param {import('../repositories/UserRepository.js').UserRepository} userRepository
-   * @param {import('../services/AuditService.js').AuditService} auditService
-   * @param {import('./SeatLockService.js').SeatLockService} seatLockService
-   */
+/**
+ * @param {import('../repositories/BookingRepository.js').BookingRepository} bookingRepository
+ * @param {import('../repositories/SeatRepository.js').SeatRepository} seatRepository
+ * @param {import('../repositories/ShowRepository.js').ShowRepository} showRepository
+ * @param {import('../repositories/UserRepository.js').UserRepository} userRepository
+ * @param {import('../services/AuditService.js').AuditService} auditService
+ * @param {import('./SeatLockService.js').SeatLockService} seatLockService
+ * @param {import('./BookingQueueService.js').BookingQueueService} bookingQueueService
+ */
   constructor(
     bookingRepository,
     seatRepository,
@@ -21,6 +22,7 @@ export class BookingService {
     userRepository,
     auditService,
     seatLockService,
+    bookingQueueService,
   ) {
     this.bookingRepository = bookingRepository;
     this.seatRepository = seatRepository;
@@ -28,13 +30,15 @@ export class BookingService {
     this.userRepository = userRepository;
     this.auditService = auditService;
     this.seatLockService = seatLockService;
+    this.bookingQueueService = bookingQueueService;
   }
 
   /**
    * Lock seat(s) for a user - supports both single and multiple seats
-   * Creates PENDING booking entries and locks seats for 5 minutes
+   * Creates PENDING booking entries and locks seats for 5 minutes.
+   * If user is not in the booking queue batch (top 1000), returns queued info instead of locking.
    * @param {{ seatIds?: string[], seatId?: string, userId: string }} data
-   * @returns {Promise<{ seat: any, booking: any, bookingId: string } | { seats: any[], booking: any, bookingId: string, count: number }>}
+   * @returns {Promise<{ queued: true, queuePosition: number, totalInQueue: number, batchSize: number, message: string } | { seats: any[], booking: any, bookingId: string, count: number }>}
    */
   async lockSeats(data) {
     const { seatIds, seatId, userId } = data;
@@ -85,6 +89,17 @@ export class BookingService {
       throw new Error(
         `Show is not available. Current status: ${firstSeat.show.status}`,
       );
+    }
+
+    const queueInfo = await this.bookingQueueService.joinQueue(showId, userId);
+    if (!queueInfo.inBatch) {
+      return {
+        queued: true,
+        queuePosition: queueInfo.position,
+        totalInQueue: queueInfo.totalInQueue,
+        batchSize: this.bookingQueueService.getBatchSize(),
+        message: `You are in the queue. Position: ${queueInfo.position}. Only the first ${this.bookingQueueService.getBatchSize()} users can book at a time. Please wait for your turn.`,
+      };
     }
 
     const bookingId = randomUUID();
@@ -163,6 +178,10 @@ export class BookingService {
         metadata: { 
           seatIds: uniqueSeatIds,
         },
+      });
+
+      await this.bookingQueueService.leaveQueue(showId, userId).catch((err) => {
+        console.error('Failed to leave booking queue:', err);
       });
 
       return {
@@ -283,6 +302,10 @@ export class BookingService {
         );
       });
 
+      await this.bookingQueueService.leaveQueue(confirmedBooking.showId, userId).catch((err) => {
+        console.error('Failed to leave booking queue after confirm:', err);
+      });
+
       await this.auditService.logSuccess({
         operationType: OperationType.BOOK,
         showId: confirmedBooking.showId,
@@ -362,6 +385,10 @@ export class BookingService {
 
       await this.seatLockService.unlockByBookingId(bookingId).catch((err) => {
         console.error("Failed to unlock Redis seats:", err);
+      });
+
+      await this.bookingQueueService.leaveQueue(booking.showId, userId).catch((err) => {
+        console.error('Failed to leave booking queue on cancel:', err);
       });
 
       await this.auditService.logSuccess({
@@ -472,6 +499,16 @@ export class BookingService {
     showId = null,
   ) {
     return this.getBookingsPaginated(page, limit, userId, status, showId, true);
+  }
+
+  /**
+   * Get user's position in the booking queue for a show.
+   * @param {string} showId
+   * @param {string} userId
+   * @returns {Promise<{ position: number, inBatch: boolean, totalInQueue: number } | null>}
+   */
+  async getQueuePosition(showId, userId) {
+    return this.bookingQueueService.getPosition(showId, userId);
   }
 
   /**

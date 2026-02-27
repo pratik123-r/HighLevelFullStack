@@ -28,6 +28,10 @@ export class BookingController {
       }
 
       const result = await this.bookingService.lockSeats({ seatIds, seatId, userId });
+      if (result.queued === true) {
+        res.status(202).json(result);
+        return;
+      }
       res.status(200).json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -85,6 +89,21 @@ export class BookingController {
       
       const result = await this.bookingService.getUserBookingsPaginated(userId, page, limit, status);
       res.status(200).json(formatPaginationResponse(result.data, result.total, page, limit));
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  getQueuePosition = async (req, res) => {
+    try {
+      const { showId } = req.params;
+      const userId = /** @type {any} */ (req).user.id;
+      if (!showId) {
+        res.status(400).json({ error: 'showId is required' });
+        return;
+      }
+      const result = await this.bookingService.getQueuePosition(showId, userId);
+      res.status(200).json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }

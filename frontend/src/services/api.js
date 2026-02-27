@@ -70,6 +70,7 @@ export const showAPI = {
 // Booking API
 export const bookingAPI = {
   lockSeats: (data) => api.post('/api/seats/lock', data),
+  getQueuePosition: (showId) => api.get(`/api/shows/${showId}/queue/position`),
   confirm: (bookingId) => api.post(`/api/bookings/${bookingId}/confirm`),
   cancel: (bookingId) => api.post(`/api/bookings/${bookingId}/cancel`),
   getAll: (params) => api.get('/api/bookings', { params }),

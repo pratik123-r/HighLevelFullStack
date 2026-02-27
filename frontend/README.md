@@ -499,7 +499,7 @@ A modern, responsive React frontend application for the Event Booking System. Th
   - Store return path in location state
   - After login, redirect back to booking
 
-#### 3. Lock Seats
+#### 3. Lock Seats (with Queue)
 
 - **API Call**: `POST /api/seats/lock`
 - **Request Body**:
@@ -509,13 +509,13 @@ A modern, responsive React frontend application for the Event Booking System. Th
     "seatIds": ["seat-1", "seat-2"]
   }
   ```
-- **Process**:
-  1. Backend acquires Redis locks for seats
-  2. Backend acquires PostgreSQL row locks
-  3. Seats marked as LOCKED
-  4. PENDING booking created
-  5. Returns booking ID
-- **Success**: Redirect to confirmation page
+- **Process** (BookMyShow-style queue):
+  1. User joins a per-show booking queue (Redis sorted set; position by timestamp).
+  2. Only the first **1000** users in the queue are allowed to book at a time.
+  3. If the user is in the batch: backend acquires Redis locks for seats, PostgreSQL row locks, marks seats LOCKED, creates PENDING booking, returns **200** with booking ID.
+  4. If the user is not in the batch: backend returns **202** with `queued: true`, `queuePosition`, `totalInQueue`, `batchSize`. The frontend shows a "You're in the queue" screen and polls `GET /api/shows/:showId/queue/position` every 2.5s. When `inBatch` becomes true, the frontend retries the lock request; when lock returns 200, the user proceeds to confirmation.
+- **Success (200)**: Redirect to confirmation page
+- **Queued (202)**: Show queue position and wait; when it's their turn, lock is retried automatically
 - **Failure**: Show error, clear selection, allow retry
 
 #### 4. Confirm Booking
@@ -630,7 +630,8 @@ All API calls are centralized in `src/services/api.js`:
 - `GET /api/users/me` - Get user profile
 - `GET /api/bookings` - Get user bookings
 - `GET /api/bookings/:id` - Get booking details
-- `POST /api/seats/lock` - Lock seats
+- `POST /api/seats/lock` - Lock seats (returns 202 with queue position if not in batch)
+- `GET /api/shows/:showId/queue/position` - Get current queue position (authenticated)
 - `POST /api/bookings/:id/confirm` - Confirm booking
 - `POST /api/bookings/:id/cancel` - Cancel booking
 

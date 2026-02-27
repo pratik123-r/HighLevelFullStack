@@ -23,6 +23,8 @@ export function createUserRoutes(userController, showController, bookingControll
   
   router.get('/users/me', authenticateUser, userController.getMyProfile);
 
+  router.get('/shows/:showId/queue/position', authenticateUser, bookingController.getQueuePosition);
+
   router.post('/seats/lock', authenticateUser, rateLimiter(5, 5 * 60 * 1000), bookingController.lockSeats); 
   
   router.post('/bookings/:bookingId/confirm', authenticateUser, bookingController.confirmBooking); 

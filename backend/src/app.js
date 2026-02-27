@@ -20,6 +20,7 @@ import { ShowService } from './services/ShowService.js';
 import { SeatService } from './services/SeatService.js';
 import { BookingService } from './services/BookingService.js';
 import { SeatLockService } from './services/SeatLockService.js';
+import { BookingQueueService } from './services/BookingQueueService.js';
 import { QueueService } from './services/QueueService.js';
 
 import { UserController } from './controllers/UserController.js';
@@ -76,13 +77,15 @@ export function createApp() {
   );
   const seatService = new SeatService(seatRepository, showRepository);
   const seatLockService = new SeatLockService();
+  const bookingQueueService = new BookingQueueService();
   const bookingService = new BookingService(
     bookingRepository,
     seatRepository,
     showRepository,
     userRepository,
     auditService,
-    seatLockService
+    seatLockService,
+    bookingQueueService
   );
 
   const userController = new UserController(userService);
